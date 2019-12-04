@@ -26,7 +26,7 @@ img_pola135 = img_pola[:,:,3]
 ```
 
 ## Estimate the Stokes vector
-```
+```python
 import cv2
 import numpy as np
 import IMX250MZR
