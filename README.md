@@ -24,3 +24,5 @@ pola45  = img_pola[:,:,1]
 pola90  = img_pola[:,:,2]
 pola135 = img_pola[:,:,3]
 ```
+
+## Estimate Stokes vector
