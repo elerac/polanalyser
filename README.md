@@ -10,7 +10,7 @@ images/polarizer_IMX250MZR-45.png
 images/polarizer_IMX250MZR-90.png
 images/polarizer_IMX250MZR-135.png
 ```
-OR, use as module.
+OR, use as a module.
 ```python
 import cv2
 import IMX250MZR
