@@ -25,7 +25,7 @@ img_pola90  = img_pola[:,:,2]
 img_pola135 = img_pola[:,:,3]
 ```
 
-## Estimate the Stokes vector
+## Estimate the Stokes parameters
 ```python
 import cv2
 import numpy as np
