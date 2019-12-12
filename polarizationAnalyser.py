@@ -20,6 +20,8 @@ class GetStokesParameters:
         upsilon : array-like
             polarizer angle
         """
+        self.height, self.width, self.depth = img_intensity.shape
+        
         #Calculate Stokes vector
         self.S = self.calculate_stokes(img_intensity, upsilon)
 
@@ -35,7 +37,7 @@ class GetStokesParameters:
 
     def calculate_stokes(self, img_intensity, upsilon):
         height, width, depth = img_intensity.shape
-        A = np.array([np.ones(depth), np.cos(2*upsilon), np.sin(2*upsilon)]).T #(depth, 3)
+        A = np.array([np.ones(self.depth), np.cos(2*upsilon), np.sin(2*upsilon)]).T #(depth, 3)
         A_pinv = np.dot(np.linalg.inv(np.dot(A.T, A)),  A.T) #(3, depth)
 
         S = np.tensordot(A_pinv, img_intensity, axes=(1,2)).transpose(1, 2, 0) #(height, width, 3)
