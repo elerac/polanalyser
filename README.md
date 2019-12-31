@@ -4,11 +4,6 @@
 Demosaic monochrome polarization bayer image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
 ```
 $ python3 IMX250MZR.py images/polarizer_IMX250MZR.png
-Export demosaicing images : images/polarizer_IMX250MZR.png
-images/polarizer_IMX250MZR-0.png
-images/polarizer_IMX250MZR-45.png
-images/polarizer_IMX250MZR-90.png
-images/polarizer_IMX250MZR-135.png
 ```
 OR, use as a module.
 ```python
