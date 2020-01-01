@@ -30,8 +30,8 @@ class GetStokesParameters:
         self.S2 = self.U = S2 = self.S[:,:,2]
 
         norm_S1_S2 = np.sqrt(S1**2+S2**2)
-        self.max = S0+norm_S1_S2
-        self.min = S0-norm_S1_S2
+        self.Imax = self.max = S0+norm_S1_S2
+        self.Imin = self.min = S0-norm_S1_S2
         self.phi = self.AoLP = np.mod(0.5*np.arctan2(S2, S1), np.pi)
         self.DoP = self.DoLP = np.clip(norm_S1_S2/S0, 0.0, 1.0)
 
