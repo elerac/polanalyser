@@ -30,14 +30,14 @@ class GetStokesParameters:
         self.S2 = self.U = S2 = self.S[:,:,2]
 
         norm_S1_S2 = np.sqrt(S1**2+S2**2)
-        self.Imax = self.max = S0+norm_S1_S2
-        self.Imin = self.min = S0-norm_S1_S2
+        self.Imax = self.max = (S0+norm_S1_S2)/2.0
+        self.Imin = self.min = (S0-norm_S1_S2)/2.0
         self.phi = self.AoLP = np.mod(0.5*np.arctan2(S2, S1), np.pi)
-        self.DoP = self.DoLP = np.clip(norm_S1_S2/S0, 0.0, 1.0)
+        self.DoP = self.DoLP = norm_S1_S2/S0
 
     def calculate_stokes(self, img_intensity, upsilon):
         height, width, depth = img_intensity.shape
-        A = np.array([np.ones(self.depth), np.cos(2*upsilon), np.sin(2*upsilon)]).T #(depth, 3)
+        A = 0.5*np.array([np.ones(self.depth), np.cos(2*upsilon), np.sin(2*upsilon)]).T #(depth, 3)
         A_pinv = np.dot(np.linalg.inv(np.dot(A.T, A)),  A.T) #(3, depth)
 
         S = np.tensordot(A_pinv, img_intensity, axes=(1,2)).transpose(1, 2, 0) #(height, width, 3)
@@ -78,7 +78,7 @@ def main():
     width = 1
     observe_num = 4
     Imax = 2
-    Imin = 0
+    Imin = 1
     phi = np.pi/3
     upsilon = np.linspace(0, np.pi, observe_num)
 
