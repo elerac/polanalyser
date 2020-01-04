@@ -18,9 +18,8 @@ def main():
     #Demosaicing
     img_I = IMX250MZR.demosaicing(bayer)
 
-    upsilon = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
-
     #Calculate polarization parameters
+    upsilon = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
     pol = GetStokesParameters(img_I, upsilon)
 
     #Image info
