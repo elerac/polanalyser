@@ -45,7 +45,7 @@ img_Imin = polarization.min
 
 |Example of results| | |
 |:-:|:-:|:-:|
-|Normal (S0)|Imax|Imin|
+|Normal ((Imax+Imin)/2.0)|Imax|Imin|
 |![](https://github.com/elerac/PolarizationImaging/blob/manuscript/polarizer_IMX250MZR_intensity.jpg)|![](https://github.com/elerac/PolarizationImaging/blob/manuscript/polarizer_IMX250MZR_max.jpg)|![](https://github.com/elerac/PolarizationImaging/blob/manuscript/polarizer_IMX250MZR_min.jpg)|
 |DoLP|AoLP||
 |![](https://github.com/elerac/PolarizationImaging/blob/manuscript/polarizer_IMX250MZR_DoLP.jpg)|![](https://github.com/elerac/PolarizationImaging/blob/manuscript/polarizer_IMX250MZR_AoLP.jpg)||
