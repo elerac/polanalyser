@@ -1,18 +1,26 @@
-# PolarizationImaging
+# Polanalyser
+Polanalyser is polarization image analysis tool. It can be used for demosaicing of bayer images taken with a polarization camera, analysis of Stokes vector and Muller matrix.
 
-## Polarization demosaicing
+## Requirement
+* OpenCV
+* Numpy
+* Numba
+
+## Usage
+### import 
+```python
+import polanalyser as pa
+```
+
+### Polarization demosaicing
 Demosaic monochrome polarization bayer image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
-```
-$ python3 IMX250MZR.py images/polarizer_IMX250MZR.png
-```
-OR, use as a module.
 ```python
 import cv2
-import IMX250MZR
+import polanalyser as pa
 
 img_bayer = cv2.imread("images/polarizer_IMX250MZR.png", -1)
 
-img_pola = IMX250MZR.demosaicing(img_bayer)
+img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 
 img_pola0   = img_pola[:,:,0]
 img_pola45  = img_pola[:,:,1]
@@ -24,23 +32,20 @@ img_pola135 = img_pola[:,:,3]
 ```python
 import cv2
 import numpy as np
-import IMX250MZR
-from polarizationAnalyser import GetStokesParameters
+import polanalyser as pa
 
 img_bayer = cv2.imread("images/polarizer_IMX250MZR.png", -1)
-img_pola = IMX250MZR.demosaicing(img_bayer)
+img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 
-upsilon = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
-polarization = GetStokesParameters(img_pola, upsilon)
+radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
+img_stokes = pa.calcStokes(img_pola, radians)
 
-img_S0 = polarization.S0
-img_S1 = polarization.S1
-img_S2 = polarization.S2
+img_S0, img_S1, img_S2 = cv2.split(img_stokes)
 
-img_AoLP = polarization.AoLP
-img_DoLP = polarization.DoLP
-img_Imax = polarization.max
-img_Imin = polarization.min
+img_Imax = pa.cvtStokesToImax(img_stokes)
+img_Imin = pa.cvtStokesToImin(img_stokes)
+img_DoLP = pa.cvtStokesToDoLP(img_stokes)
+img_AoLP = pa.cvtStokesToAoLP(img_stokes)
 ```
 
 |Example of results| | |
