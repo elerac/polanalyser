@@ -15,17 +15,19 @@ def __demosaicing_float(bayer):
     img_polarization = cv2.filter2D(pre_bayer, -1, kernel)
     return img_polarization[:,:,[0, 1, 3, 2]]
 
+def __demosaicing_uint(bayer):
+    BG = cv2.cvtColor(bayer, cv2.COLOR_BayerBG2BGR)
+    GR = cv2.cvtColor(bayer, cv2.COLOR_BayerGR2BGR)
+    img_polarization = np.array((BG[:,:,2], GR[:,:,0], BG[:,:,0], GR[:,:,2])).transpose(1, 2, 0)
+    return img_polarization
+
 def demosaicing(bayer):
     """
     src: bayer image array
     dst: demosaicing image array (0-45-90-135)
     """
-    if bayer.dtype!=np.uint8 and bayer.dtype!=np.uint16: return __demosaicing_float(bayer)
-    
-    BG = cv2.cvtColor(bayer, cv2.COLOR_BayerBG2BGR)
-    GR = cv2.cvtColor(bayer, cv2.COLOR_BayerGR2BGR)
-    img_polarization = np.array((BG[:,:,2], GR[:,:,0], BG[:,:,0], GR[:,:,2])).transpose(1, 2, 0)
-    return img_polarization
+    if bayer.dtype==np.uint8 or bayer.dtype==np.uint16: return __demosaicing_uint(bayer)
+    else: return __demosaicing_float(bayer)
 
 def main():
     import argparse
