@@ -3,7 +3,7 @@ import numpy as np
 from numba import njit, float64
 
 def calcStokes(images, radians):
-    A = np.array([np.ones_like(radians), np.cos(2*radians), np.sin(2*radians)]).T #(depth, 3)
+    A = 0.5*np.array([np.ones_like(radians), np.cos(2*radians), np.sin(2*radians)]).T #(depth, 3)
     A_pinv = np.linalg.inv(A.T @ A) @ A.T #(3, depth)
     img_stokes = np.tensordot(A_pinv, images, axes=(1,2)).transpose(1, 2, 0) #(height, width, 3)
     return img_stokes
@@ -13,14 +13,14 @@ def cvtStokesToImax(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
-    return (S0+np.sqrt(S1**2+S2**2))
+    return (S0+np.sqrt(S1**2+S2**2))*0.5
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True)
 def cvtStokesToImin(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
-    return (S0-np.sqrt(S1**2+S2**2))
+    return (S0-np.sqrt(S1**2+S2**2))*0.5
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True)
 def cvtStokesToDoLP(img_stokes):

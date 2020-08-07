@@ -34,7 +34,7 @@ def main():
     
     #Convert polarization parameters to images
     S0, S1, S2 = cv2.split(img_stokes)
-    img_intensity = S0
+    img_intensity = S0*0.5
     img_Imax = pa.cvtStokesToImax(img_stokes)
     img_Imin = pa.cvtStokesToImin(img_stokes)
     img_AoLP = pa.cvtStokesToAoLP(img_stokes)
