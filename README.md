@@ -53,7 +53,7 @@ img_DoLP = pa.cvtStokesToDoLP(img_stokes)
 img_AoLP = pa.cvtStokesToAoLP(img_stokes)
 ```
 
-|Example of results| | |
+||Example of results | |
 |:-:|:-:|:-:|
-|Normal ((Imax+Imin)/2.0)|DoLP|AoLP|
+|Normal (S0/2.0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
