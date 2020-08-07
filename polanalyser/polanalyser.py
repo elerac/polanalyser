@@ -13,14 +13,14 @@ def cvtStokesToImax(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
-    return (S0+np.sqrt(S1**2+S2**2))*0.5
+    return (S0+np.sqrt(S1**2+S2**2))
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True)
 def cvtStokesToImin(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
-    return (S0-np.sqrt(S1**2+S2**2))*0.5
+    return (S0-np.sqrt(S1**2+S2**2))
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True)
 def cvtStokesToDoLP(img_stokes):
