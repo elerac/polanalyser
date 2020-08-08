@@ -2,9 +2,9 @@
 Polanalyser is polarization image analysis tool.
 
 It can be used for 
-* Demosaicing of bayer images taken with a polarization camera
-* Analysis of Stokes vector
-* Analysis of Mueller matrix
+* [Demosaicing of bayer images taken with a polarization camera](#polarization-demosaicing)
+* [Analysis of Stokes vector](#analysis-of-stokes-vector)
+* [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
 
 Limitation: Currently, only linear polarization is assumed, and circular polarization is not taken into account.
 
