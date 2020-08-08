@@ -13,6 +13,13 @@ Limitation: Currently, only linear polarization is assumed, and circular polariz
 * Numpy
 * Numba
 
+## Installation
+```sh
+git clone https://github.com/elerac/polanalyser.git 
+cd polanalyser
+python setup.py install
+```
+
 ## Polarization image dataset
 You can download a sample of polarization images taken with Sony IMX250MZR sensor (FLIR, BFS-U3-51S5P-C) [here](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
 
