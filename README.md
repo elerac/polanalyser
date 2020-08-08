@@ -46,7 +46,7 @@ img_0, img_45, img_90, img_135 = cv2.split(img_pola)
 ### Analysis of Stokes vector
 The [**Stokes vector**](https://en.wikipedia.org/wiki/Stokes_parameters) (or parameters) are a set of values that describe the polarization state. You can get these values by taking at least three images while rotating the polarizer (If you want to take into account circular polarization, you need to add measurements with a retarder).
 ![](documents/stokes_setup.png)
-The Stokes vector can be converted to meaningful values. **Degree of Linear Polarization** (DoLP) represents how much the light is polarized. The value is 1 for perfectly polarized light and 0 for randomly polarized light.
+The Stokes vector can be converted to meaningful values. **Degree of Linear Polarization** (DoLP) represents how much the light is polarized. The value is 1 for perfectly polarized light and 0 for unpolarized light. **Angle of Linear Polarization** (AoLP) represents the polarization angle of the incident light relative to the camera sensor axis. The value ranges from 0 to 180 degrees.
 ```python
 import cv2
 import numpy as np
@@ -75,6 +75,7 @@ img_AoLP_norm = pa.applyLightColorToAoLP(img_AoLP)
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
 ### Analysis of Mueller matrix
+[Mueller matrix](https://en.wikipedia.org/wiki/Mueller_calculus)
 ![](documents/mueller_setup.png)
 ```python
 import cv2
