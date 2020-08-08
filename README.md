@@ -4,15 +4,15 @@ Polanalyser is polarization image analysis tool.
 It can be used for 
 * Demosaicing of bayer images taken with a polarization camera
 * Analysis of Stokes vector
-* Analysis of Muller matrix
+* Analysis of Mueller matrix
 
 ## Requirement
 * OpenCV
 * Numpy
 * Numba
 
-## Polarization image datasets
-You can download a sample of polarization images taken by Sony IMX250MZR sensor (FLIR, BFS-U3-51S5P-C) [here](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
+## Polarization image dataset
+You can download a sample of polarization images taken with Sony IMX250MZR sensor (FLIR, BFS-U3-51S5P-C) [here](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
 
 ## Usage
 ### import 
@@ -61,5 +61,5 @@ img_AoLP_norm = pa.applyLightColorToAoLP(img_AoLP)
 |Intensity (S0/2.0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
-### Analysis of Muller matrix
+### Analysis of Mueller matrix
 
