@@ -30,7 +30,7 @@ img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 img_0, img_45, img_90, img_135 = cv2.split(img_pola)
 ```
 
-## Analysis of Stokes vector
+### Analysis of Stokes vector
 ```python
 import cv2
 import numpy as np
@@ -57,3 +57,6 @@ img_AoLP_norm = pa.applyLightColorToAoLP(img_AoLP)
 |:-:|:-:|:-:|
 |Intensity (S0/2.0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
+
+### Analysis of Muller matrix
+
