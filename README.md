@@ -6,7 +6,7 @@ It can be used for
 * Analysis of Stokes vector
 * Analysis of Mueller matrix
 
-Currently, only linear polarization is assumed, and circular polarization is not taken into account.
+Limitation: Currently, only linear polarization is assumed, and circular polarization is not taken into account.
 
 ## Requirement
 * OpenCV
@@ -24,6 +24,7 @@ import polanalyser as pa
 
 ### Polarization demosaicing
 Demosaic monochrome polarization bayer image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
+![](documents/demosaicing.png)
 ```python
 import cv2
 import polanalyser as pa
