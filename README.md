@@ -11,6 +11,9 @@ It can be used for
 * Numpy
 * Numba
 
+## Polarization image datasets
+You can download a sample of polarization images taken by Sony IMX250MZR sensor (FLIR, BFS-U3-51S5P-C) [here](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
+
 ## Usage
 ### import 
 ```python
@@ -36,7 +39,7 @@ import cv2
 import numpy as np
 import polanalyser as pa
 
-img_bayer = cv2.imread("images/dragon_IMX250MZR.png", 0)
+img_bayer = cv2.imread("IMX250MZR/dragon.png", 0)
 img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 
 radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
