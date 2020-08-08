@@ -35,6 +35,17 @@ def cvtStokesToAoLP(img_stokes):
     S2 = img_stokes[:,:,2]
     return np.mod(0.5*np.arctan2(S2, S1), np.pi)
 
+@njit(float64[:,:](float64[:,:,:]), parallel=True)
+def cvtStokesToDiffuse(img_stokes):
+    Imin = cvtStokesToImin(img_stokes)
+    return 2*Imin
+
+@njit(float64[:,:](float64[:,:,:]), parallel=True)
+def cvtStokesToSpecular(img_stokes):
+    Imax = cvtStokesToImax(img_stokes)
+    Imin = cvtStokesToImin(img_stokes)
+    return Imax-Imin
+
 def applyLightColorToAoLP(img_AoLP, img_DoLP=None):
     img_ones = (np.ones_like(img_AoLP) * 255).astype(np.uint8)
     img_normalized_AoLP = (np.mod(img_AoLP, np.pi)/np.pi*179).astype(np.uint8) # 0~pi -> 0~179
