@@ -44,7 +44,9 @@ img_0, img_45, img_90, img_135 = cv2.split(img_pola)
 ```
 
 ### Analysis of Stokes vector
+The [**Stokes vector**](https://en.wikipedia.org/wiki/Stokes_parameters) (or parameters) are a set of values that describe the polarization state. You can get these values by taking at least three images while rotating the polarizer (If you want to take into account circular polarization, you need to add measurements with a retarder).
 ![](documents/stokes_setup.png)
+The Stokes vector can be converted to meaningful values. **Degree of Linear Polarization** (DoLP) represents how much the light is polarized. The value is 1 for perfectly polarized light and 0 for randomly polarized light.
 ```python
 import cv2
 import numpy as np
