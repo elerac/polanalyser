@@ -1,10 +1,12 @@
 # Polanalyser
-Polanalyser is polarization image analysis tool. 
+Polanalyser is polarization image analysis tool.
 
 It can be used for 
 * Demosaicing of bayer images taken with a polarization camera
 * Analysis of Stokes vector
 * Analysis of Mueller matrix
+
+Currently, only linear polarization is assumed, and circular polarization is not taken into account.
 
 ## Requirement
 * OpenCV
@@ -34,6 +36,7 @@ img_0, img_45, img_90, img_135 = cv2.split(img_pola)
 ```
 
 ### Analysis of Stokes vector
+![](documents/stokes_setup.png)
 ```python
 import cv2
 import numpy as np
@@ -62,4 +65,11 @@ img_AoLP_norm = pa.applyLightColorToAoLP(img_AoLP)
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
 ### Analysis of Mueller matrix
+![](documents/mueller_setup.png)
+```python
+import cv2
+import numpy as np
+import polanalyser as pa
 
+#TBA
+```
