@@ -26,7 +26,7 @@ Demosaic monochrome polarization bayer image taken with the [IMX250MZR](https://
 import cv2
 import polanalyser as pa
 
-img_bayer = cv2.imread("images/polarizer_IMX250MZR.png", -1)
+img_bayer = cv2.imread("IMX250MZR/dragon.png", -1)
 
 img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 
@@ -39,7 +39,7 @@ import cv2
 import numpy as np
 import polanalyser as pa
 
-img_bayer = cv2.imread("IMX250MZR/dragon.png", 0)
+img_bayer = cv2.imread("IMX250MZR/dragon.png", -1)
 img_pola = pa.IMX250MZR.demosaicing(img_bayer)
 
 radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
