@@ -30,7 +30,7 @@ import polanalyser as pa
 ```
 
 ### Polarization demosaicing
-Demosaic monochrome polarization bayer image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
+Demosaic raw polarization image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
 ![](documents/demosaicing.png)
 ```python
 import cv2
