@@ -58,9 +58,9 @@ def cvtStokesToDiffuse(img_stokes):
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True)
 def cvtStokesToSpecular(img_stokes):
-    Imax = cvtStokesToImax(img_stokes)
-    Imin = cvtStokesToImin(img_stokes)
-    return Imax-Imin
+    S1 = img_stokes[:,:,1]
+    S2 = img_stokes[:,:,2]
+    return np.sqrt(S1**2+S2**2) #same as Imax-Imin
 
 def applyLightColorToAoLP(img_AoLP, img_DoLP=None):
     img_ones = (np.ones_like(img_AoLP) * 255).astype(np.uint8)
