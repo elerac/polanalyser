@@ -62,27 +62,14 @@ def cvtStokesToSpecular(img_stokes):
     S2 = img_stokes[:,:,2]
     return np.sqrt(S1**2+S2**2) #same as Imax-Imin
 
-def applyLightColorToAoLP(img_AoLP, img_DoLP=None):
-    img_ones = (np.ones_like(img_AoLP) * 255).astype(np.uint8)
-    img_normalized_AoLP = (np.mod(img_AoLP, np.pi)/np.pi*179).astype(np.uint8) # 0~pi -> 0~179
-    if img_DoLP is not None:
-        img_normalized_DoLP = np.clip(img_DoLP*255, 0, 255).astype(np.uint8)
-    else:
-        img_normalized_DoLP = img_ones
-    
-    img_hsv = cv2.merge([img_normalized_AoLP, img_normalized_DoLP, img_ones])
-    img_bgr = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
-    return img_bgr
+def applyColorToAoLP(img_AoLP, saturation=1.0, value=1.0):
+    img_ones = np.ones_like(img_AoLP)
 
-def applyDarkColorToAoLP(img_AoLP, img_DoLP=None):
-    img_ones = (np.ones_like(img_AoLP) * 255).astype(np.uint8)
-    img_normalized_AoLP = (np.mod(img_AoLP, np.pi)/np.pi*179).astype(np.uint8) # 0~pi -> 0~179
-    if img_DoLP is not None:
-        img_normalized_DoLP = np.clip(img_DoLP*255, 0, 255).astype(np.uint8)
-    else:
-        img_normalized_DoLP = img_ones
+    img_hue = (np.mod(img_AoLP, np.pi)/np.pi*179).astype(np.uint8) # 0~pi -> 0~179
+    img_saturation = np.clip(img_ones*saturation*255, 0, 255).astype(np.uint8)
+    img_value = np.clip(img_ones*value*255, 0, 255).astype(np.uint8)
     
-    img_hsv = cv2.merge([img_normalized_AoLP, img_ones, img_normalized_DoLP])
+    img_hsv = cv2.merge([img_hue, img_saturation, img_value])
     img_bgr = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
     return img_bgr
 
