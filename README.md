@@ -52,21 +52,17 @@ import cv2
 import numpy as np
 import polanalyser as pa
 
-img_bayer = cv2.imread("IMX250MZR/dragon.png", -1)
-img_pola = pa.IMX250MZR.demosaicing(img_bayer)
+img_raw = cv2.imread("IMX250MZR/dragon.png", -1)
+img_demosaiced = pa.IMX250MZR.demosaicing(img_raw)
 
 radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
-img_stokes = pa.calcStokes(img_pola, radians)
+img_stokes = pa.calcStokes(img_demosaiced, radians)
 
 img_S0, img_S1, img_S2 = cv2.split(img_stokes)
 
 img_intensity = img_S0/2
 img_DoLP = pa.cvtStokesToDoLP(img_stokes)
 img_AoLP = pa.cvtStokesToAoLP(img_stokes)
-
-img_intensity_norm = np.clip(img_intensity, 0, 255).astype(np.uint8)
-img_DoLP_norm = np.clip(img_DoLP*255, 0, 255).astype(np.uint8)
-img_AoLP_norm = pa.applyLightColorToAoLP(img_AoLP)
 ```
 
 ||Example of results | |
