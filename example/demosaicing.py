@@ -1,9 +1,6 @@
 """
 Polarization demosaicing example
-
-python demosaicing.py "filepath"
 """
-
 import cv2
 import argparse
 import os
@@ -13,7 +10,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath", type=str, help="raw image file path (of IMX250MZR)")
     args = parser.parse_args()
-    
     filepath = args.filepath
     
     # Read RAW polarization image
