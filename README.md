@@ -36,11 +36,11 @@ Demosaic raw polarization image taken with the [IMX250MZR](https://www.sony-semi
 import cv2
 import polanalyser as pa
 
-img_bayer = cv2.imread("IMX250MZR/dragon.png", -1)
+img_raw = cv2.imread("IMX250MZR/dragon.png", -1)
 
-img_pola = pa.IMX250MZR.demosaicing(img_bayer)
+img_demosaiced = pa.IMX250MZR.demosaicing(img_raw)
 
-img_0, img_45, img_90, img_135 = cv2.split(img_pola)
+img_0, img_45, img_90, img_135 = cv2.split(img_demosaiced)
 ```
 
 ### Analysis of Stokes vector
