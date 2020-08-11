@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from numba import njit, float64, uint8, prange
+from numba import njit, float64
 
 @njit(parallel=True)
 def calcStokesPolaCam(images):
