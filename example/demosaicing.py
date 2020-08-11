@@ -19,10 +19,6 @@ def main():
     # Read RAW polarization image
     img_raw = cv2.imread(filepath, -1)
     
-    if img_raw is None:
-        print("{} not found".format(filepath))
-        exit()
-
     # Demosaicing
     img_demosaiced = pa.IMX250MZR.demosaicing(img_raw)
 
