@@ -48,8 +48,9 @@ def main():
     img_DoLP_norm = normarize(img_DoLP*255, np.uint8, gamma=1.0)
     cv2.imwrite(name+"_DoLP"+".png", img_DoLP_norm)
 
-    img_AoLP_color = pa.applyLightColorToAoLP(img_AoLP) # apply pseudo-color
-    #img_AoLP_color = pa.applyLightColorToAoLP(img_AoLP, img_DoLP)
+    img_AoLP_color = pa.applyColorToAoLP(img_AoLP) # apply pseudo-color
+    #img_AoLP_color = pa.applyColorToAoLP(img_AoLP, saturation=img_DoLP)
+    #img_AoLP_color = pa.applyColorToAoLP(img_AoLP, value=img_DoLP)
     cv2.imwrite(name+"_AoLP"+".png", img_AoLP_color)
 
 def normarize(image, dtype=np.uint8, gamma=2.2):
