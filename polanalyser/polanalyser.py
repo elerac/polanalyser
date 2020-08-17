@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from numba import njit, float64
 
-@njit(parallel=True)
+@njit(parallel=True, cache=True)
 def calcStokesPolaCam(images):
     """
     This function is the same as calcStokes() when radians is [0, np.pi/4, np.pi/2, np.pi*3/4].
@@ -24,39 +24,39 @@ def calcStokes(images, radians):
     img_stokes = np.tensordot(A_pinv, images, axes=(1,2)).transpose(1, 2, 0) #(height, width, 3)
     return img_stokes
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToImax(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
     return (S0+np.sqrt(S1**2+S2**2))*0.5
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToImin(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
     return (S0-np.sqrt(S1**2+S2**2))*0.5
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToDoLP(img_stokes):
     S0 = img_stokes[:,:,0]
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
     return np.sqrt(S1**2+S2**2)/S0
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToAoLP(img_stokes):
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
     return np.mod(0.5*np.arctan2(S2, S1), np.pi)
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToDiffuse(img_stokes):
     Imin = cvtStokesToImin(img_stokes)
-    return 2*Imin
+    return 1.0*Imin
 
-@njit(float64[:,:](float64[:,:,:]), parallel=True)
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToSpecular(img_stokes):
     S1 = img_stokes[:,:,1]
     S2 = img_stokes[:,:,2]
