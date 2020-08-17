@@ -3,9 +3,9 @@ import numpy as np
 from numba import njit, float64
 
 @njit(parallel=True, cache=True)
-def calcStokesPolaCam(images):
+def __calcStokesPolaCam(images):
     """
-    This function is the same as calcStokes() when radians is [0, np.pi/4, np.pi/2, np.pi*3/4].
+    This function is the same as __calcStokesArbitrary() when radians is [0, np.pi/4, np.pi/2, np.pi*3/4].
     If radians is [0, np.pi/4, np.pi/2, np.pi*3/4], then A_pinv is very simple and stokes calculation can be written in a simpler form.
     As a result, it is about x4 faster than calcStokes(), thanks to the JIT compilation and parallelization of Numba.
     """
@@ -16,13 +16,19 @@ def calcStokesPolaCam(images):
     img_stokes[:,:,2] = 1.0*images[:,:,1] - 1.0*images[:,:,3]
     return img_stokes
 
-def calcStokes(images, radians):
-    if np.all(radians==np.array([0, np.pi/4, np.pi/2, np.pi*3/4])): return calcStokesPolaCam(images)
+def __calcStokesArbitrary(images, radians):
 
     A = 0.5*np.array([np.ones_like(radians), np.cos(2*radians), np.sin(2*radians)]).T #(depth, 3)
     A_pinv = np.linalg.inv(A.T @ A) @ A.T #(3, depth)
     img_stokes = np.tensordot(A_pinv, images, axes=(1,2)).transpose(1, 2, 0) #(height, width, 3)
     return img_stokes
+
+def calcStokes(images, radians):
+    if np.all(radians==np.array([0, np.pi/4, np.pi/2, np.pi*3/4])):
+        return __calcStokesPolaCam(images)
+    else:
+        return __calcStokesArbitrary(images, radians)
+
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToImax(img_stokes):
