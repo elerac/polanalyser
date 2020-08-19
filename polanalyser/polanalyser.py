@@ -58,6 +58,11 @@ def cvtStokesToAoLP(img_stokes):
     return np.mod(0.5*np.arctan2(S2, S1), np.pi)
 
 @njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
+def cvtStokesToIntensity(img_stokes):
+    S0 = img_stokes[:,:,0]
+    return S0*0.5
+
+@njit(float64[:,:](float64[:,:,:]), parallel=True, cache=True)
 def cvtStokesToDiffuse(img_stokes):
     Imin = cvtStokesToImin(img_stokes)
     return 1.0*Imin
