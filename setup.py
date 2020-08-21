@@ -8,5 +8,6 @@ setup(
     author='Ryota Maeda',
     author_email='maeda.ryota.elerac@gmail.com',
     license='MIT',
-    packages=find_packages()
+    packages=find_packages(),
+    zip_safe=False
 )
