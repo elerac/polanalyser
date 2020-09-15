@@ -15,9 +15,7 @@ Limitation: Currently, only linear polarization is assumed, and circular polariz
 
 ## Installation
 ```sh
-git clone https://github.com/elerac/polanalyser.git 
-cd polanalyser
-python setup.py install
+pip install git+https://github.com/elerac/polanalyser
 ```
 
 ## Polarization image dataset
