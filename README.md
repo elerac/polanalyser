@@ -6,12 +6,12 @@ It can be used for
 * [Analysis of Stokes vector](#analysis-of-stokes-vector)
 * [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
 
-Limitation: Currently, only linear polarization is assumed, and circular polarization is not taken into account.
+Limitation: Currently, **only linear polarization** is assumed, and circular polarization is not taken into account.
 
 ## Requirement
 * OpenCV
 * Numpy
-* Numba
+* [Numba](https://github.com/numba/numba)
 
 ## Installation
 ```sh
