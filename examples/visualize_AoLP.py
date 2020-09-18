@@ -15,8 +15,8 @@ def main():
     filepath = args.filepath
 
     # Read and Demosaicing image
-    img_raw = cv2.imread(filepath, -1)
-    img_demosaiced = pa.IMX250MZR.demosaicing(img_raw)
+    img_raw = cv2.imread(filepath, 0)
+    img_demosaiced = pa.demosaicing(img_raw)
 
     # Calculate Stokes vector
     radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
