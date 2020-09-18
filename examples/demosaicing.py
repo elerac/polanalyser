@@ -16,7 +16,7 @@ def main():
     img_raw = cv2.imread(filepath, -1)
     
     # Demosaicing
-    img_demosaiced = pa.IMX250MZR.demosaicing(img_raw)
+    img_demosaiced = pa.demosaicing(img_raw)
 
     img_0, img_45, img_90, img_135 = cv2.split(img_demosaiced)
   
