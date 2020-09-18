@@ -28,31 +28,3 @@ def demosaicing(bayer):
     """
     if bayer.dtype==np.uint8 or bayer.dtype==np.uint16: return __demosaicing_uint(bayer)
     else: return __demosaicing_float(bayer)
-
-def main():
-    import argparse
-    import os
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filepath", type=str, nargs="+", help="bayer image file path (of IMX250MZR)")
-    args = parser.parse_args()
-
-    for filepath_src in args.filepath:
-        img_bayer = cv2.imread(filepath_src, -1)
-        
-        if img_bayer is None:
-            print("{} not found".format(filepath_src))
-            continue
-           
-        img_pola = demosaicing(img_bayer)
-      
-        print("Export demosaicing images : {}".format(filepath_src))
-        name, ext = os.path.splitext(filepath_src)
-        for i, upsilon in enumerate([0, 45, 90, 135]):
-            pola_u = img_pola[:,:,i]
-            filepath_dst = name + "-" + str(upsilon) + ext
-            cv2.imwrite(filepath_dst, pola_u)
-            print(filepath_dst)
-        print()
-
-if __name__=="__main__":
-    main()
