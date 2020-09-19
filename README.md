@@ -6,7 +6,8 @@ It can be used for
 * [Analysis of Stokes vector](#analysis-of-stokes-vector)
 * [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
 
-Limitation: Currently, **only linear polarization** is assumed, and circular polarization is not taken into account.
+### Note
+Currently, **only linear polarization** is assumed, and circular polarization is not taken into account.
 
 ## Requirement
 * OpenCV
@@ -28,7 +29,7 @@ import polanalyser as pa
 ```
 
 ### Polarization demosaicing
-Demosaic raw polarization image taken with the [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html) sensor.
+Demosaic raw polarization image taken with the polarization sensor (e.g. [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html)).
 ![](documents/demosaicing.png)
 ```python
 import cv2
@@ -58,9 +59,9 @@ img_stokes = pa.calcStokes(img_demosaiced, radians)
 
 img_S0, img_S1, img_S2 = cv2.split(img_stokes)
 
-img_intensity = img_S0/2
-img_DoLP = pa.cvtStokesToDoLP(img_stokes)
-img_AoLP = pa.cvtStokesToAoLP(img_stokes)
+img_intensity = pa.cvtStokesToIntensity(img_stokes)
+img_DoLP      = pa.cvtStokesToDoLP(img_stokes)
+img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
 ```
 
 ||Example of results | |
