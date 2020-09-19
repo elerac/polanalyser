@@ -1,6 +1,23 @@
 import numpy as np
 
 def calcMueller(images, radians_light, radians_camera):
+    """
+    Calculate mueller matrix from captured images and 
+    angles of the linear polarizer on the light side and the camera side.
+    
+    Parameters
+    ----------
+    images : np.ndarray, (height, width, N)
+        Captured images
+    radians_light : np.ndarray, (N,)
+        polarizer angles on the light side
+    radians_camera : np.ndarray, (N,)
+        polarizer angles on the camera side
+    Returns
+    -------
+    img__mueller : np.ndarray, (height, width, 9)
+        Calculated mueller matrix image
+    """
     cos_light  = np.cos(2*radians_light)
     sin_light  = np.sin(2*radians_light)
     cos_camera = np.cos(2*radians_camera)
