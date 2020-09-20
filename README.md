@@ -13,21 +13,17 @@ Currently, **only linear polarization** is assumed, and circular polarization is
 * OpenCV
 * Numpy
 * [Numba](https://github.com/numba/numba)
+* matplotlib
 
 ## Installation
 ```sh
 pip install git+https://github.com/elerac/polanalyser
 ```
 
-## Polarization image dataset
+## Polarization Image Dataset
 You can download a sample of polarization images taken with Sony IMX250MZR sensor (FLIR, BFS-U3-51S5P-C) [here](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
 
 ## Usage
-### import 
-```python
-import polanalyser as pa
-```
-
 ### Polarization demosaicing
 Demosaic raw polarization image taken with the polarization sensor (e.g. [IMX250MZR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html)).
 ![](documents/demosaicing.png)
@@ -70,12 +66,7 @@ img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
 ### Analysis of Mueller matrix
-[Mueller matrix](https://en.wikipedia.org/wiki/Mueller_calculus)
+The [Mueller matrix](https://en.wikipedia.org/wiki/Mueller_calculus) is a 4x4 matrix that represents the change in the polarization state of light. If we consider only linear polarization, it can be represented as a 3x3 matrix.
+When a light changes its polarization state due to optical elements or reflection, the changed polarization state can be computed by the matrix product of the Muller matrix and the Stokes vector.
 ![](documents/mueller_setup.png)
-```python
-import cv2
-import numpy as np
-import polanalyser as pa
-
-#TBA
-```
+For linear polarization, the Mueller matrix can be obtained by placing linear polarizers on the light side and the camera side. It is calculated using the least-squares method from multiple images taken by rotating each polarizer (9 or more images).
