@@ -6,6 +6,8 @@ It can be used for
 * [Analysis of Stokes vector](#analysis-of-stokes-vector)
 * [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
 
+By analyzing the polarization images, it can be used for [various applications](https://github.com/elerac/polanalyser/wiki/Applications-for-Polarization-Image).
+
 ### Note
 Currently, **only linear polarization** is assumed, and circular polarization is not taken into account.
 
