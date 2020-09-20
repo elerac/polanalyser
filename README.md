@@ -67,6 +67,7 @@ img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
 |:-:|:-:|:-:|
 |Intensity (S0/2.0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
+
 What do the colors in the AoLP image represent? [See the wiki for details](https://github.com/elerac/polanalyser/wiki/How-to-Visualizing-the-AoLP-Image).
 
 ### Analysis of Mueller matrix
