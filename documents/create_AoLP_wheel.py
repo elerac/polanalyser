@@ -39,7 +39,9 @@ def plot_hsv_wheel(filename, is_saturation=False, is_value=False, DoLP_tick=Fals
     ax = plt.subplot(111, polar=True)
     ax.set_theta_direction(-1)
     ax.set_theta_zero_location("N")
-    if DoLP_tick==False:
+    if DoLP_tick:
+        ax.set_yticks([0, 0.5, 1])
+    else:
         ax.set_yticks([])
     
     #get coordinates:
