@@ -31,7 +31,7 @@ Demosaic raw polarization image taken with the polarization sensor (e.g. [IMX250
 import cv2
 import polanalyser as pa
 
-img_raw = cv2.imread("IMX250MZR/dragon.png", 0)
+img_raw = cv2.imread("dataset/dragon.png", 0)
 
 img_demosaiced = pa.demosaicing(img_raw)
 
@@ -47,7 +47,7 @@ import cv2
 import numpy as np
 import polanalyser as pa
 
-img_raw = cv2.imread("IMX250MZR/dragon.png", 0)
+img_raw = cv2.imread("dataset/dragon.png", 0)
 img_demosaiced = pa.demosaicing(img_raw)
 
 radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
