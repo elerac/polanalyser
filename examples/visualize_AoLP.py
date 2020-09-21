@@ -35,12 +35,12 @@ def main():
     # Set saturation to DoLP
     # As a result, the image is lighter and has color only at the polarized area
     img_AoLP_light = pa.applyColorToAoLP(img_AoLP, saturation=img_DoLP)
-    cv2.imwrite(name+"_AoLP_light"+".png", img_AoLP_light)
+    cv2.imwrite(name+"_AoLP_saturation"+".png", img_AoLP_light)
     
     # Set value to DoLP
     # As a result, the image is darker and has color only at the polarized area
     img_AoLP_dark = pa.applyColorToAoLP(img_AoLP, value=img_DoLP)
-    cv2.imwrite(name+"_AoLP_dark"+".png", img_AoLP_dark)
+    cv2.imwrite(name+"_AoLP_value"+".png", img_AoLP_dark)
 
 if __name__=="__main__":
     main()
