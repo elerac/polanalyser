@@ -60,13 +60,13 @@ def plot_hsv_wheel(filename, is_saturation=False, is_value=False, DoLP_tick=Fals
     plt.close('all')
 
 def main():
-    print("Normal case")
+    print("AoLP(Hue) Color Map")
     plot_hsv_wheel("AoLP_wheel.jpg")
 
-    print("Satulation modulated case")
+    print("AoLP(Hue)+DoLP(Saturation) Color Map")
     plot_hsv_wheel("AoLP_wheel_saturation.jpg", is_saturation=True, DoLP_tick=True)
 
-    print("Value modulated case")
+    print("AoLP(Hue)+DoLP(Value) Color Map")
     plot_hsv_wheel("AoLP_wheel_value.jpg", is_value=True, DoLP_tick=True)
 
 if __name__=="__main__":
