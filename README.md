@@ -25,7 +25,7 @@ pip install git+https://github.com/elerac/polanalyser
 ## Polarization Image Dataset
 A dataset of images taken by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
 
-[**Click here and download datset**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+[**Click here and download dataset**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
 
 ## Usage
