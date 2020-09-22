@@ -106,7 +106,8 @@ img_m21, img_m22, img_m23,\
 img_m31, img_m32, img_m33  = cv2.split(img_mueller)
 
 # Plot the Mueller matrix image
-pa.plotMueller("plot_mueller.jpg", img_mueller, vabsmax=0.1)
+pa.plotMueller("plot_mueller.jpg", img_mueller, vabsmax=0.5)
 ```
 
+Here's an example of the result.
 ![](documents/mueller_various.jpg)
