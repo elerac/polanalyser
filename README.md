@@ -87,10 +87,10 @@ import numpy as np
 import polanalyser as pa
 
 # Read all images (l:light, c:camera)
-img_l0_c0     = cv2.imread("dataset/mueller/various_l0_c0.exr")
-img_l0_c45    = cv2.imread("dataset/mueller/various_l0_c45.exr")
+img_l0_c0     = cv2.imread("dataset/mueller/various_l0_c0.exr", -1)
+img_l0_c45    = cv2.imread("dataset/mueller/various_l0_c45.exr", -1)
 ...
-img_l135_c135 = cv2.imread("dataset/mueller/various_l135_c135.exr")
+img_l135_c135 = cv2.imread("dataset/mueller/various_l135_c135.exr", -1)
 
 # Prepare variables to be put into the function
 images         = cv2.merge([img_l0_c0, img_l0_c45, ... , img_l135_c135])
