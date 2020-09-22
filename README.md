@@ -14,8 +14,8 @@ Currently, **only linear polarization** is assumed, and circular polarization is
 ## Requirement
 * OpenCV
 * Numpy
-* [Numba](https://github.com/numba/numba)
 * matplotlib
+* Numba
 
 ## Installation
 ```sh
@@ -52,14 +52,18 @@ import cv2
 import numpy as np
 import polanalyser as pa
 
+# Read image and demosaicing
 img_raw = cv2.imread("dataset/dragon.png", 0)
 img_demosaiced = pa.demosaicing(img_raw)
 
+# Calculate the Stokes vector per-pixel
 radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
 img_stokes = pa.calcStokes(img_demosaiced, radians)
 
+# Decompose the Stokes vector into its components
 img_S0, img_S1, img_S2 = cv2.split(img_stokes)
 
+# Convert the Stokes vector to Intensity, DoLP and AoLP
 img_intensity = pa.cvtStokesToIntensity(img_stokes)
 img_DoLP      = pa.cvtStokesToDoLP(img_stokes)
 img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
@@ -73,7 +77,36 @@ img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
 What do the colors in the AoLP image represent? [See the wiki for details](https://github.com/elerac/polanalyser/wiki/How-to-Visualizing-the-AoLP-Image).
 
 ### Analysis of Mueller matrix
-The [Mueller matrix](https://en.wikipedia.org/wiki/Mueller_calculus) is a 4x4 matrix that represents the change in the polarization state of light. If we consider only linear polarization, it can be represented as a 3x3 matrix.
+The [**Mueller matrix**](https://en.wikipedia.org/wiki/Mueller_calculus) is a 4x4 matrix that represents the change in the polarization state of light. If we consider only linear polarization, it can be represented as a 3x3 matrix.
 When a light changes its polarization state due to optical elements or reflection, the changed polarization state can be computed by the matrix product of the Muller matrix and the Stokes vector.
 ![](documents/mueller_setup.png)
 For linear polarization, the Mueller matrix can be obtained by placing linear polarizers on the light side and the camera side. It is calculated using the least-squares method from multiple images taken by rotating each polarizer (9 or more images).
+```python
+import cv2
+import numpy as np
+import polanalyser as pa
+
+# Read all images (l:light, c:camera)
+img_l0_c0     = cv2.imread("dataset/mueller/various_l0_c0.exr")
+img_l0_c45    = cv2.imread("dataset/mueller/various_l0_c45.exr")
+...
+img_l135_c135 = cv2.imread("dataset/mueller/various_l135_c135.exr")
+
+# Prepare variables to be put into the function
+images         = cv2.merge([img_l0_c0, img_l0_c45, ... , img_l135_c135])
+radinas_light  = np.array([0, 0, ..., np.pi*3/4])
+radians_camera = np.array([0, np.pi/4, ..., np.pi*3/4])
+
+# Calculate the Muller matrix per-pixel
+img_mueller = pa.calcMueller(images, radians_light, radians_camera)
+
+# Decompose the Mueller matrix into its components
+img_m11, img_m12, img_m13,\
+img_m21, img_m22, img_m23,\
+img_m31, img_m32, img_m33  = cv2.split(img_mueller)
+
+# Plot the Mueller matrix image
+pa.plotMueller("plot_mueller.jpg", img_mueller, vabsmax=0.1)
+```
+
+![](documents/mueller_various.jpg)
