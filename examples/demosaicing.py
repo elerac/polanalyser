@@ -2,17 +2,12 @@
 Polarization demosaicing example
 """
 import cv2
-import argparse
 import os
 import polanalyser as pa
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filepath", type=str, help="raw image file path (of IMX250MZR)")
-    args = parser.parse_args()
-    filepath = args.filepath
-    
-    # Read RAW polarization image
+    # Read polarization image
+    filepath = "dataset/dragon.png"
     img_raw = cv2.imread(filepath, -1)
     
     # Demosaicing
