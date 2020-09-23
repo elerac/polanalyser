@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='polanalyser',
-    version='1.1.0',
+    version='1.1.1',
     description='Polarization image analysis tool',
     url='https://github.com/elerac/polanalyser',
     author='Ryota Maeda',
