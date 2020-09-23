@@ -52,6 +52,10 @@ def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_t
     """
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import ImageGrid
+    try:
+        plt.rcParams["mpl_toolkits.legacy_colorbar"] = False
+    except KeyError:
+        pass
     
     # Check for 'img_muller' shape
     height, width, channel = img_mueller.shape
