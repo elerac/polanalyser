@@ -29,6 +29,55 @@ def calcMueller(images, radians_light, radians_camera):
     return img_mueller
 
 
+def rotator(theta):
+    """
+    Generate Mueller matrix of rotation
+    """
+    ones = np.ones_like(theta)
+    zeros = np.zeros_like(theta)
+    sin2 = np.sin(2*theta)
+    cos2 = np.cos(2*theta)
+    M = np.array([[ones,  zeros, zeros, zeros],
+                  [zeros,  cos2,  sin2, zeros],
+                  [zeros, -sin2,  cos2, zeros],
+                  [zeros, zeros, zeros, ones]])
+    return np.moveaxis(M, [0,1], [-2,-1])
+
+def rotate_mueller(M, theta):
+    """
+    Rotate Mueller matrix
+    """
+    return rotator(-theta) @ M @ rotator(theta)
+
+def polarizer(theta=0):
+    """
+    Generate Mueller matrix of linear polarizer
+    """
+    M = np.array([[0.5, 0.5, 0, 0],
+                  [0.5, 0.5, 0, 0],
+                  [0, 0, 0, 0],
+                  [0, 0, 0, 0]])
+    M = rotate_mueller(M, theta)
+    return M
+
+def retarder(delta=np.pi/2, theta=0):
+    """
+    Generate Mueller matrix of linear retarder
+    """
+    ones = np.ones_like(delta)
+    zeros = np.zeros_like(delta)
+    sin = np.sin(delta)
+    cos = np.cos(delta)
+    M = np.array([[ones,  zeros, zeros, zeros],
+                  [zeros, ones,  zeros, zeros],
+                  [zeros, zeros, cos,   -sin],
+                  [zeros, zeros, sin,   cos]])
+    M = np.moveaxis(M, [0,1], [-2,-1])
+    
+    M = rotate_mueller(M, theta)
+    return M
+
+
 def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
     """
     Apply color map to the Mueller matrix image and save them side by side
