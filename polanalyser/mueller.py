@@ -23,10 +23,9 @@ def calcMueller(images, radians_light, radians_camera):
     cos_camera = np.cos(2*radians_camera)
     sin_camera = np.sin(2*radians_camera)
     A = np.array([np.ones_like(radians_light), cos_light, sin_light, cos_camera, cos_camera*cos_light, cos_camera*sin_light, sin_camera, sin_camera*cos_light, sin_camera*sin_light]).T
-    A_pinv = np.linalg.inv(A.T @ A) @ A.T #(9, depth)
-    img_mueller = np.tensordot(A_pinv, images, axes=(1,2)).transpose(1, 2, 0) #(height, width, 9)
-    #height, width, _ = images.shape
-    #img_mueller_2D = np.reshape(img_mueller, (height, width, 3, 3))
+    A_pinv = np.linalg.inv(A.T @ A) @ A.T #(9, N)
+    img_mueller = np.tensordot(A_pinv, images, axes=(1,-1)) #(9, height, width)
+    img_mueller = np.moveaxis(img_mueller, 0, -1) # (height, width, 9)
     return img_mueller
 
 
