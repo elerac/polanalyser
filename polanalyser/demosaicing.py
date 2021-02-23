@@ -1,33 +1,39 @@
 import cv2
 import numpy as np
 
-def __demosaicing_float(bayer):
+def __demosaicing_float(img_raw):
     """
     Polarization demosaicing for arbitrary type
-    
+   
     cv2.cvtColor supports either uint8 or uint16 type. Float type bayer is demosaiced by this function.
     pros: slow
     cons: float available
     """
-    kernel = np.array([[1/4, 1/2, 1/4],[1/2, 1, 1/2],[1/4, 1/2, 1/4]], dtype=np.float64)
+    height, width = img_raw.shape[:2]
+    dtype = img_raw.dtype
     
-    height, width = bayer.shape
-    pre_bayer = np.zeros((height, width, 4), dtype=bayer.dtype)
-    pre_bayer[0::2, 0::2, 0] = bayer[0::2, 0::2]
-    pre_bayer[0::2, 1::2, 1] = bayer[0::2, 1::2]
-    pre_bayer[1::2, 0::2, 2] = bayer[1::2, 0::2]
-    pre_bayer[1::2, 1::2, 3] = bayer[1::2, 1::2]
+    img_subsampled = np.zeros((height, width, 4), dtype=dtype)
+    img_subsampled[0::2, 0::2, 0] = img_raw[0::2, 0::2]
+    img_subsampled[0::2, 1::2, 1] = img_raw[0::2, 1::2]
+    img_subsampled[1::2, 0::2, 2] = img_raw[1::2, 0::2]
+    img_subsampled[1::2, 1::2, 3] = img_raw[1::2, 1::2]
     
-    img_polarization = cv2.filter2D(pre_bayer, -1, kernel)
-    return img_polarization[:,:,[3, 1, 0, 2]]
+    kernel = np.array([[1/4, 1/2, 1/4],
+                       [1/2, 1.0, 1/2], 
+                       [1/4, 1/2, 1/4]], dtype=np.float64)
+    img_polarization = cv2.filter2D(img_subsampled, -1, kernel)
+    return img_polarization[..., [3, 1, 0, 2]]
 
-def __demosaicing_uint(bayer):
+def __demosaicing_uint(img_raw):
     """
     Polarization demosaicing for np.uint8 or np.uint16 type
     """
-    BG = cv2.cvtColor(bayer, cv2.COLOR_BayerBG2BGR)
-    GR = cv2.cvtColor(bayer, cv2.COLOR_BayerGR2BGR)
-    img_polarization = np.array((BG[:,:,0], GR[:,:,0], BG[:,:,2], GR[:,:,2])).transpose(1, 2, 0)
+    img_debayer_bg = cv2.cvtColor(img_raw, cv2.COLOR_BayerBG2BGR)
+    img_debayer_gr = cv2.cvtColor(img_raw, cv2.COLOR_BayerGR2BGR)
+    img_0,  _, img_90  = np.moveaxis(img_debayer_bg, -1, 0)
+    img_45, _, img_135 = np.moveaxis(img_debayer_gr, -1, 0)
+    img_polarization = np.array([img_0, img_45, img_90, img_135], dtype=img_raw.dtype)
+    img_polarization = np.moveaxis(img_polarization, 0, -1)
     return img_polarization
 
 def demosaicing(img_bayer):
