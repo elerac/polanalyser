@@ -12,8 +12,11 @@ def __demosaicing_float(bayer):
     kernel = np.array([[1/4, 1/2, 1/4],[1/2, 1, 1/2],[1/4, 1/2, 1/4]], dtype=np.float64)
     
     height, width = bayer.shape
-    value_position = np.fromfunction(lambda c,y,x: ((y%2)*2+x%2)==c, (4,height,width))
-    pre_bayer = (np.array((bayer,bayer,bayer,bayer)) * value_position).transpose(1, 2, 0)
+    pre_bayer = np.zeros((height, width, 4), dtype=bayer.dtype)
+    pre_bayer[0::2, 0::2, 0] = bayer[0::2, 0::2]
+    pre_bayer[0::2, 1::2, 1] = bayer[0::2, 1::2]
+    pre_bayer[1::2, 0::2, 2] = bayer[1::2, 0::2]
+    pre_bayer[1::2, 1::2, 3] = bayer[1::2, 1::2]
     
     img_polarization = cv2.filter2D(pre_bayer, -1, kernel)
     return img_polarization[:,:,[3, 1, 0, 2]]
