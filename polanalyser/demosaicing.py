@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 
+from enum import IntEnum, auto
+class ColorConversionCodes(IntEnum):
+    COLOR_IMX250MZR2MonoPola = auto()
+    COLOR_IMX250MYR2ColorPola = auto()
+
 def __demosaicing_float(img_raw):
     """
     Polarization demosaicing for arbitrary type
@@ -36,13 +41,13 @@ def __demosaicing_uint(img_raw):
     img_polarization = np.moveaxis(img_polarization, 0, -1)
     return img_polarization
 
-def demosaicing(img_bayer):
+def demosaicing(img_raw):
     """
     Polarization demosaicing
 
     Parameters
     ----------
-    img_bayer : np.ndarry, (height, width)
+    img_raw : np.ndarry, (height, width)
         RAW polarization image taken with polarizatin camera (e.g. IMX250MZR sensor)
     
     Returns
@@ -50,7 +55,7 @@ def demosaicing(img_bayer):
     img_polarization: np.ndarray, (height, width, 4)
         Dmosaiced image. 0-45-90-135.
     """
-    if img_bayer.dtype==np.uint8 or img_bayer.dtype==np.uint16:
-        return __demosaicing_uint(img_bayer)
+    if img_raw.dtype==np.uint8 or img_raw.dtype==np.uint16:
+        return __demosaicing_uint(img_raw)
     else:
-        return __demosaicing_float(img_bayer)
+        return __demosaicing_float(img_raw)
