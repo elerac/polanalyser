@@ -234,6 +234,24 @@ def cvtStokesToEllipticityAngle(img_stokes):
     S3 = img_stokes[..., 3]
     return 0.5*np.arctan2(S3, np.sqrt(S1**2+S2**2))
 
+@njit(parallel=True, cache=True)
+def cvtStokesToDoCP(img_stokes):
+    """
+    Convert stokes vector image to DoCP (Degree of Circular Polarization) image
+
+    Parameters
+    ----------
+    img_stokes : np.ndarray, (height, width, 3)
+        Stokes vector image
+
+    Returns
+    -------
+    img_DoCP : np.ndarray, (height, width)
+        DoCP image ∈ [-1, 1]
+    """
+    S0 = img_stokes[..., 0]
+    S3 = img_stokes[..., 3]
+    return S3 / S0
 
 def applyColorToAoLP(img_AoLP, saturation=1.0, value=1.0):
     """
