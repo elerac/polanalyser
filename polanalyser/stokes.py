@@ -30,30 +30,29 @@ def calcStokes(intensities, muellers):
     if not isinstance(muellers, np.ndarray):
         muellers = np.stack(muellers, axis=-1) # (3, 3, n) or (4, 4, n)
 
-def calcLinearStokes(I, theta):
-    """
-    Calculate only linear polarization stokes vector from observed intensity and linear polarizer angle
     A = muellers[0].T # [m11, m12, m13, m14] (n, 3) or [m11, m12, m13] (n, 4)
     A_pinv = np.linalg.pinv(A) # (3, n)
     stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
     stokes = np.moveaxis(stokes, 0, -1) # (height, width, 3)
     return stokes
 
+def calcLinearStokes(intensities, thetas):
+    """Calculate only linear polarization stokes vector from observed intensity and linear polarizer angle
     
     Parameters
     ----------
-    I : np.ndarray
-      Observed intensity
+    intensities : np.ndarray
+      Intensity of measurements (height, width, n)
     theta : np.ndarray
-      Polarizer angles
+      Linear polarizer angles (n, )
 
     Returns
     -------
     S : np.ndarray
-      Stokes vector
+      Stokes vector (height, width, 3)
     """
-    M = polarizer(theta)[..., :3, :3]
-    return calcStokes(I, M)
+    muellers = [ polarizer(theta)[..., :3, :3] for theta in thetas ]
+    return calcStokes(intensities, muellers)
 
 @njit(parallel=True, cache=True)
 def cvtStokesToImax(img_stokes):
