@@ -115,7 +115,21 @@ def retarder(delta, theta):
     mueller = rotateMueller(mueller, theta)
     return mueller
 
+def qwp(theta):
+    """Generate Mueller matrix of Quarter-Wave Plate (QWP)
     
+    Parameters
+    ----------
+    theta : float
+      the angle of the fast axis
+
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
+    """
+    return retarder(np.pi/2, theta)
+
 
 
 def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
