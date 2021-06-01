@@ -30,6 +30,11 @@ def calcStokes(intensities, muellers):
     if not isinstance(muellers, np.ndarray):
         muellers = np.stack(muellers, axis=-1) # (3, 3, n) or (4, 4, n)
 
+    if muellers.ndim == 1:
+        # 1D array case
+        thetas = muellers
+        return calcLinearStokes(intensities, thetas)
+
     A = muellers[0].T # [m11, m12, m13, m14] (n, 3) or [m11, m12, m13] (n, 4)
     A_pinv = np.linalg.pinv(A) # (3, n)
     stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
