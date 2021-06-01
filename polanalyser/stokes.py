@@ -112,7 +112,7 @@ def cvtStokesToDoLP(img_stokes):
     Returns
     -------
     img_DoLP : np.ndarray, (height, width)
-        DoLP image
+        DoLP image ∈ [0, 1]
     """
     S0 = img_stokes[..., 0]
     S1 = img_stokes[..., 1]
@@ -132,7 +132,7 @@ def cvtStokesToAoLP(img_stokes):
     Returns
     -------
     img_AoLP : np.ndarray, (height, width)
-        AoLP image
+        AoLP image ∈ [0, np.pi]
     """
     S1 = img_stokes[..., 1]
     S2 = img_stokes[..., 2]
@@ -206,7 +206,7 @@ def cvtStokesToDoP(img_stokes):
     Returns
     -------
     img_DoP : np.ndarray, (height, width)
-        DoP image
+        DoP image ∈ [0, 1]
     """
     S0 = img_stokes[..., 0]
     S1 = img_stokes[..., 1]
@@ -227,7 +227,7 @@ def cvtStokesToEllipticityAngle(img_stokes):
     Returns
     -------
     img_EllipticityAngle : np.ndarray, (height, width)
-        ellipticity angle image (-pi/4 ~ pi/4)
+        ellipticity angle image ∈ [-pi/4, pi/4]
     """
     S1 = img_stokes[..., 1]
     S2 = img_stokes[..., 2]
