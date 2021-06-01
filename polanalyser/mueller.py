@@ -130,6 +130,20 @@ def qwp(theta):
     """
     return retarder(np.pi/2, theta)
 
+def hwp(theta):
+    """Generate Mueller matrix of Half-Wave Plate (QWP)
+    
+    Parameters
+    ----------
+    theta : float
+      the angle of the fast axis
+
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
+    """
+    return retarder(np.pi, theta)
 
 
 def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
