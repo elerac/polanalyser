@@ -15,7 +15,7 @@ def calcMueller(images, radians_light, radians_camera):
         polarizer angles on the camera side
     Returns
     -------
-    img__mueller : np.ndarray, (height, width, 9)
+    img_mueller : np.ndarray, (height, width, 9)
         Calculated mueller matrix image
     """
     cos_light  = np.cos(2*radians_light)
@@ -28,54 +28,94 @@ def calcMueller(images, radians_light, radians_camera):
     img_mueller = np.moveaxis(img_mueller, 0, -1) # (height, width, 9)
     return img_mueller
 
-
 def rotator(theta):
-    """
-    Generate Mueller matrix of rotation
+    """Generate Mueller matrix of rotation
+
+    Parameters
+    ----------
+    theta : float
+      the angle of rotation
+
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
     """
     ones = np.ones_like(theta)
     zeros = np.zeros_like(theta)
     sin2 = np.sin(2*theta)
     cos2 = np.cos(2*theta)
-    M = np.array([[ones,  zeros, zeros, zeros],
+    mueller = np.array([[ones,  zeros, zeros, zeros],
                   [zeros,  cos2,  sin2, zeros],
                   [zeros, -sin2,  cos2, zeros],
                   [zeros, zeros, zeros, ones]])
-    return np.moveaxis(M, [0,1], [-2,-1])
+    mueller = np.moveaxis(mueller, [0,1], [-2,-1])
+    return mueller
 
-def rotate_mueller(M, theta):
-    """
-    Rotate Mueller matrix
-    """
-    return rotator(-theta) @ M @ rotator(theta)
+def rotateMueller(mueller, theta):
+    """Rotate Mueller matrix
+    
+    Parameters
+    ----------
+    theta : float
+      the angle of rotation
 
-def polarizer(theta=0):
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
     """
-    Generate Mueller matrix of linear polarizer
+    return rotator(-theta) @ mueller @ rotator(theta)
+
+def polarizer(theta):
+    """Generate Mueller matrix of linear polarizer
+
+    Parameters
+    ----------
+    theta : float
+      the angle of the linear polarizer
+
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
     """
-    M = np.array([[0.5, 0.5, 0, 0],
+    mueller = np.array([[0.5, 0.5, 0, 0],
                   [0.5, 0.5, 0, 0],
-                  [0, 0, 0, 0],
-                  [0, 0, 0, 0]])
-    M = rotate_mueller(M, theta)
-    return M
+                  [  0,   0, 0, 0],
+                  [  0,   0, 0, 0]]) # (4, 4)
+    mueller = rotateMueller(mueller, theta)
+    return mueller
 
-def retarder(delta=np.pi/2, theta=0):
-    """
-    Generate Mueller matrix of linear retarder
+def retarder(delta, theta):
+    """Generate Mueller matrix of linear retarder
+    
+    Parameters
+    ----------
+    delta : float
+      the phase difference between the fast and slow axis
+    theta : float
+      the angle of the fast axis
+
+    Returns
+    -------
+    mueller : np.ndarray
+      mueller matrix (4, 4)
     """
     ones = np.ones_like(delta)
     zeros = np.zeros_like(delta)
     sin = np.sin(delta)
     cos = np.cos(delta)
-    M = np.array([[ones,  zeros, zeros, zeros],
-                  [zeros, ones,  zeros, zeros],
-                  [zeros, zeros, cos,   -sin],
-                  [zeros, zeros, sin,   cos]])
-    M = np.moveaxis(M, [0,1], [-2,-1])
+    mueller = np.array([[ones,  zeros, zeros, zeros],
+                        [zeros, ones,  zeros, zeros],
+                        [zeros, zeros, cos,   -sin],
+                        [zeros, zeros, sin,   cos]])
+    mueller = np.moveaxis(mueller, [0,1], [-2,-1])
     
-    M = rotate_mueller(M, theta)
-    return M
+    mueller = rotateMueller(mueller, theta)
+    return mueller
+
+    
 
 
 def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
