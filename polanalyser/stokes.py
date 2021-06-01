@@ -24,6 +24,11 @@ def calcStokes(intensities, muellers):
     stokes : np.ndarray
       Stokes vector (height, width, 3) or (height, width, 4)
     """
+    if not isinstance(intensities, np.ndarray):
+        intensities = np.stack(intensities, axis=-1) # (height, width, n)
+
+    if not isinstance(muellers, np.ndarray):
+        muellers = np.stack(muellers, axis=-1) # (3, 3, n) or (4, 4, n)
 
 def calcLinearStokes(I, theta):
     """
