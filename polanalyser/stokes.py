@@ -8,31 +8,32 @@ warnings.simplefilter('ignore', NumbaPerformanceWarning) # Ignore numba warning 
 
 from .mueller import polarizer
 
-def calcStokes(I, M):
-    """
-    Calculate stokes vector from observed intensity and mueller matrix
+
+def calcStokes(intensities, muellers):
+    """Calculate stokes vector from observed intensity and mueller matrix
 
     Parameters
     ----------
-    I : np.ndarray
-      Observed intensity
-    M : np.ndarray
-      Mueller matrix
+    intensities : np.ndarray
+      Intensity of measurements (height, width, n)
+    muellers : np.ndarray
+      Mueller matrix (3, 3, n) or (4, 4, n)
 
     Returns
     -------
-    S : np.ndarray
-      Stokes vector
+    stokes : np.ndarray
+      Stokes vector (height, width, 3) or (height, width, 4)
     """
-    A = M[..., 0, :]
-    A_pinv = np.linalg.pinv(A)
-    S = np.tensordot(A_pinv, I, axes=(1,-1)) # (3, ...)
-    S = np.moveaxis(S, 0, -1) # (..., 3)
-    return S
 
 def calcLinearStokes(I, theta):
     """
     Calculate only linear polarization stokes vector from observed intensity and linear polarizer angle
+    A = muellers[0].T # [m11, m12, m13, m14] (n, 3) or [m11, m12, m13] (n, 4)
+    A_pinv = np.linalg.pinv(A) # (3, n)
+    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
+    stokes = np.moveaxis(stokes, 0, -1) # (height, width, 3)
+    return stokes
+
     
     Parameters
     ----------
