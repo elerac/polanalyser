@@ -35,7 +35,7 @@ def calcStokes(intensities, muellers):
         thetas = muellers
         return calcLinearStokes(intensities, thetas)
 
-    A = muellers[0].T # [m11, m12, m13, m14] (n, 3) or [m11, m12, m13] (n, 4)
+    A = muellers[0].T # [m11, m12, m13] (n, 3) or [m11, m12, m13, m14] (n, 4)
     A_pinv = np.linalg.pinv(A) # (3, n)
     stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
     stokes = np.moveaxis(stokes, 0, -1) # (height, width, 3)
