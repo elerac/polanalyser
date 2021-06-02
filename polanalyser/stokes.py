@@ -6,54 +6,58 @@ import warnings
 from numba import NumbaPerformanceWarning
 warnings.simplefilter('ignore', NumbaPerformanceWarning) # Ignore numba warning of "NumbaPerformanceWarning: The keyword argument 'parallel=True' was specified but no transformation for parallel execution was possible."
 
-@njit(parallel=True, cache=True)
-def __calcStokesPolaCam(images):
-    """
-    Calculate stokes vector from captured images and linear polarizer angles
+from .mueller import polarizer
 
-    This function is the same as __calcStokesArbitrary() when radians is [0, np.pi/4, np.pi/2, np.pi*3/4]. A_pinv is very simple and stokes calculation can be written in a simpler form.
-    As a result, it is about x4 faster than __calcStokesArbitrary(), thanks to the JIT compilation and parallelization of Numba.
-    """
-    size = images.shape[:-1]
-    img_stokes = np.empty((*size, 3))
-    img_stokes[..., 0] = 0.5*images[..., 0] + 0.5*images[..., 1] + 0.5*images[..., 2] + 0.5*images[..., 3]
-    img_stokes[..., 1] = 1.0*images[..., 0] - 1.0*images[..., 2]
-    img_stokes[..., 2] = 1.0*images[..., 1] - 1.0*images[..., 3]
-    return img_stokes
 
-def __calcStokesArbitrary(images, radians):
-    """
-    Calculate stokes vector from captured images and linear polarizer angles
-    """
-    A = 0.5*np.array([np.ones_like(radians), np.cos(2*radians), np.sin(2*radians)]).T #(N, 3)
-    A_pinv = np.linalg.inv(A.T @ A) @ A.T #(3, N)
-    img_stokes = np.tensordot(A_pinv, images, axes=(1,-1)) #(3, height, width)
-    img_stokes = np.moveaxis(img_stokes, 0, -1) # (height, width, 3)
-    return img_stokes
-
-def calcStokes(images, radians):
-    """
-    Calculate stokes vector from captured images and linear polarizer angles
+def calcStokes(intensities, muellers):
+    """Calculate stokes vector from observed intensity and mueller matrix
 
     Parameters
     ----------
-    images : np.ndarray, (height, width, N)
-        Captured images
-    radians : np.ndarray, (N,)
-        polarizer angles
+    intensities : np.ndarray
+      Intensity of measurements (height, width, n)
+    muellers : np.ndarray
+      Mueller matrix (3, 3, n) or (4, 4, n)
 
     Returns
     -------
-    img_stokes : np.ndarray, (height, width, 3)
-        Calculated stokes vector image
+    stokes : np.ndarray
+      Stokes vector (height, width, 3) or (height, width, 4)
     """
-    if np.all(radians==np.array([0, np.pi/4, np.pi/2, np.pi*3/4])):
-        # Special case when radians is [0, np.pi/4, np.pi/2, np.pi*3/4]
-        return __calcStokesPolaCam(images)
-    else:
-        # Common case arbitrary radians
-        return __calcStokesArbitrary(images, radians)
+    if not isinstance(intensities, np.ndarray):
+        intensities = np.stack(intensities, axis=-1) # (height, width, n)
 
+    if not isinstance(muellers, np.ndarray):
+        muellers = np.stack(muellers, axis=-1) # (3, 3, n) or (4, 4, n)
+
+    if muellers.ndim == 1:
+        # 1D array case
+        thetas = muellers
+        return calcLinearStokes(intensities, thetas)
+
+    A = muellers[0].T # [m11, m12, m13] (n, 3) or [m11, m12, m13, m14] (n, 4)
+    A_pinv = np.linalg.pinv(A) # (3, n)
+    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
+    stokes = np.moveaxis(stokes, 0, -1) # (height, width, 3)
+    return stokes
+
+def calcLinearStokes(intensities, thetas):
+    """Calculate only linear polarization stokes vector from observed intensity and linear polarizer angle
+    
+    Parameters
+    ----------
+    intensities : np.ndarray
+      Intensity of measurements (height, width, n)
+    theta : np.ndarray
+      Linear polarizer angles (n, )
+
+    Returns
+    -------
+    S : np.ndarray
+      Stokes vector (height, width, 3)
+    """
+    muellers = [ polarizer(theta)[..., :3, :3] for theta in thetas ]
+    return calcStokes(intensities, muellers)
 
 @njit(parallel=True, cache=True)
 def cvtStokesToImax(img_stokes):
@@ -108,7 +112,7 @@ def cvtStokesToDoLP(img_stokes):
     Returns
     -------
     img_DoLP : np.ndarray, (height, width)
-        DoLP image
+        DoLP image ∈ [0, 1]
     """
     S0 = img_stokes[..., 0]
     S1 = img_stokes[..., 1]
@@ -128,7 +132,7 @@ def cvtStokesToAoLP(img_stokes):
     Returns
     -------
     img_AoLP : np.ndarray, (height, width)
-        AoLP image
+        AoLP image ∈ [0, np.pi]
     """
     S1 = img_stokes[..., 1]
     S2 = img_stokes[..., 2]
@@ -188,6 +192,66 @@ def cvtStokesToSpecular(img_stokes):
     S1 = img_stokes[..., 1]
     S2 = img_stokes[..., 2]
     return np.sqrt(S1**2+S2**2) #same as Imax-Imin
+
+@njit(parallel=True, cache=True)
+def cvtStokesToDoP(img_stokes):
+    """
+    Convert stokes vector image to DoP (Degree of Polarization) image
+
+    Parameters
+    ----------
+    img_stokes : np.ndarray, (height, width, 3)
+        Stokes vector image
+
+    Returns
+    -------
+    img_DoP : np.ndarray, (height, width)
+        DoP image ∈ [0, 1]
+    """
+    S0 = img_stokes[..., 0]
+    S1 = img_stokes[..., 1]
+    S2 = img_stokes[..., 2]
+    S3 = img_stokes[..., 3]
+    return np.sqrt(S1**2+S2**2+S3**2)/S0
+
+@njit(parallel=True, cache=True)
+def cvtStokesToEllipticityAngle(img_stokes):
+    """
+    Convert stokes vector image to ellipticity angle image
+
+    Parameters
+    ----------
+    img_stokes : np.ndarray, (height, width, 3)
+        Stokes vector image
+
+    Returns
+    -------
+    img_EllipticityAngle : np.ndarray, (height, width)
+        ellipticity angle image ∈ [-pi/4, pi/4]
+    """
+    S1 = img_stokes[..., 1]
+    S2 = img_stokes[..., 2]
+    S3 = img_stokes[..., 3]
+    return 0.5*np.arctan2(S3, np.sqrt(S1**2+S2**2))
+
+@njit(parallel=True, cache=True)
+def cvtStokesToDoCP(img_stokes):
+    """
+    Convert stokes vector image to DoCP (Degree of Circular Polarization) image
+
+    Parameters
+    ----------
+    img_stokes : np.ndarray, (height, width, 3)
+        Stokes vector image
+
+    Returns
+    -------
+    img_DoCP : np.ndarray, (height, width)
+        DoCP image ∈ [-1, 1]
+    """
+    S0 = img_stokes[..., 0]
+    S3 = img_stokes[..., 3]
+    return S3 / S0
 
 def applyColorToAoLP(img_AoLP, saturation=1.0, value=1.0):
     """
