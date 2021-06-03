@@ -1,8 +1,8 @@
 """
 Polarization demosaicing example
 """
-import cv2
 import os
+import cv2
 import polanalyser as pa
 
 def main():
@@ -17,10 +17,10 @@ def main():
   
     print("Export demosaicing images : {}".format(filepath))
     name, ext = os.path.splitext(filepath)
-    cv2.imwrite(name+"-0"  +ext, img_0)
-    cv2.imwrite(name+"-45" +ext, img_45)
-    cv2.imwrite(name+"-90" +ext, img_90)
-    cv2.imwrite(name+"-135"+ext, img_135)
+    cv2.imwrite(f"{name}-000{ext}", img_0)
+    cv2.imwrite(f"{name}-045{ext}", img_45)
+    cv2.imwrite(f"{name}-090{ext}", img_90)
+    cv2.imwrite(f"{name}-135{ext}", img_135)
 
 if __name__=="__main__":
     main()
