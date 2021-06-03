@@ -55,8 +55,8 @@ img_raw = cv2.imread("dataset/dragon.png", 0)
 img_demosaiced = pa.demosaicing(img_raw)
 
 # Calculate the Stokes vector per-pixel
-radians = np.array([0, np.pi/4, np.pi/2, np.pi*3/4])
-img_stokes = pa.calcStokes(img_demosaiced, radians)
+angles = np.deg2rad([0, 45, 90, 135])
+img_stokes = pa.calcStokes(img_demosaiced, angles)
 
 # Decompose the Stokes vector into its components
 img_S0, img_S1, img_S2 = cv2.split(img_stokes)
