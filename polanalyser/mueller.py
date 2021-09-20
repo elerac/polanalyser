@@ -1,32 +1,43 @@
 import numpy as np
 
-def calcMueller(images, radians_light, radians_camera):
-    """
-    Calculate mueller matrix from captured images and 
-    angles of the linear polarizer on the light side and the camera side.
+def calcMueller(intensities, muellers_p, muellers_a):
+    """Calculate Mueller matrix from observed intensities and Mueller matrixes of light source and analyzer
     
     Parameters
     ----------
-    images : np.ndarray, (height, width, N)
-        Captured images
-    radians_light : np.ndarray, (N,)
-        polarizer angles on the light side
-    radians_camera : np.ndarray, (N,)
-        polarizer angles on the camera side
+    intensities : np.ndarray
+        Measured intensities. (height, width, K)
+    muellers_p : np.ndarray
+        Mueller matrix of the light source. (3, 3, K) or (4, 4, K)
+    muellers_a : np.ndarray
+        Mueller matrix of the analyzer. (3, 3, K) or (4, 4, K)
+
     Returns
     -------
-    img_mueller : np.ndarray, (height, width, 9)
-        Calculated mueller matrix image
+    mueller : np.ndarray
+        Mueller matrix. (height, width, 9) or (height, width, 16)
     """
-    cos_light  = np.cos(2*radians_light)
-    sin_light  = np.sin(2*radians_light)
-    cos_camera = np.cos(2*radians_camera)
-    sin_camera = np.sin(2*radians_camera)
-    A = np.array([np.ones_like(radians_light), cos_light, sin_light, cos_camera, cos_camera*cos_light, cos_camera*sin_light, sin_camera, sin_camera*cos_light, sin_camera*sin_light]).T
-    A_pinv = np.linalg.inv(A.T @ A) @ A.T #(9, N)
-    img_mueller = np.tensordot(A_pinv, images, axes=(1,-1)) #(9, height, width)
-    img_mueller = np.moveaxis(img_mueller, 0, -1) # (height, width, 9)
-    return img_mueller
+    if not isinstance(intensities, np.ndarray):
+        intensities = np.stack(intensities, axis=-1)  # (height, width, K)
+
+    if not isinstance(muellers_p, np.ndarray):
+        muellers_p = np.stack(muellers_p, axis=-1)  # (3, 3, K) or (4, 4, K)
+
+    if not isinstance(muellers_a, np.ndarray):
+        muellers_a = np.stack(muellers_a, axis=-1)  # (3, 3, K) or (4, 4, K)
+    
+    K = intensities.shape[-1]
+    D = muellers_p.shape[0]  # scalar: 3 or 4
+    W = np.empty((K, D*D))
+    for k in range(K):
+        P1 = np.expand_dims(muellers_p[:, 0, k], axis=1)  # [m11, m21, m31] or [m11, m21, m31, m41]
+        A1 = np.expand_dims(muellers_a[0, :, k], axis=0)  # [m11, m12, m13] or [m11, m12, m13, m14]
+        W[k] = np.ravel((P1 @ A1).T)
+
+    W_pinv = np.linalg.pinv(W)  # (D*D, K)
+    mueller = np.tensordot(W_pinv, intensities, axes=(1, -1)) # (9, height, width) or (16, height, width)
+    mueller = np.moveaxis(mueller, 0, -1) # (height, width, 9) or ((height, width, 16)
+    return mueller
 
 def rotator(theta):
     """Generate Mueller matrix of rotation
