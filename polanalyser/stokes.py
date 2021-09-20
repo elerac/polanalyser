@@ -4,35 +4,35 @@ from .mueller import polarizer
 from .util import njit_if_available
 
 def calcStokes(intensities, muellers):
-    """Calculate stokes vector from observed intensity and mueller matrix
+    """Calculate stokes vector from observed intensities and mueller matrix
 
     Parameters
     ----------
     intensities : np.ndarray
-      Intensity of measurements (height, width, n)
+      Measured intensities. (height, width, K)
     muellers : np.ndarray
-      Mueller matrix (3, 3, n) or (4, 4, n)
+      Mueller matrix. (3, 3, K) or (4, 4, K)
 
     Returns
     -------
     stokes : np.ndarray
-      Stokes vector (height, width, 3) or (height, width, 4)
+      Stokes vector. (height, width, 3) or (height, width, 4)
     """
     if not isinstance(intensities, np.ndarray):
-        intensities = np.stack(intensities, axis=-1) # (height, width, n)
+        intensities = np.stack(intensities, axis=-1)  # (height, width, K)
 
     if not isinstance(muellers, np.ndarray):
-        muellers = np.stack(muellers, axis=-1) # (3, 3, n) or (4, 4, n)
+        muellers = np.stack(muellers, axis=-1)  # (3, 3, K) or (4, 4, K)
 
-    if muellers.ndim == 1:
-        # 1D array case
+    # 1D array case
+    if muellers.ndim == 1:    
         thetas = muellers
         return calcLinearStokes(intensities, thetas)
 
-    A = muellers[0].T # [m11, m12, m13] (n, 3) or [m11, m12, m13, m14] (n, 4)
-    A_pinv = np.linalg.pinv(A) # (3, n)
-    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1)) # (3, height, width) or (4, height, width)
-    stokes = np.moveaxis(stokes, 0, -1) # (height, width, 3)
+    A = muellers[0].T  # [m11, m12, m13] (K, 3) or [m11, m12, m13, m14] (K, 4)
+    A_pinv = np.linalg.pinv(A)  # (3, K) or (K, 4)
+    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1))  # (3, height, width) or (4, height, width)
+    stokes = np.moveaxis(stokes, 0, -1)  # (height, width, 3) or (height, width, 4)
     return stokes
 
 def calcLinearStokes(intensities, thetas):
