@@ -68,15 +68,25 @@ def rotateMueller(mueller, theta):
     
     Parameters
     ----------
+    mueller : np.ndarray
+      mueller matrix (3, 3) or (4, 4)
     theta : float
       the angle of rotation
 
     Returns
     -------
-    mueller : np.ndarray
-      mueller matrix (4, 4)
+    mueller_rotated : np.ndarray
+      rotated mueller matrix (3, 3) or (4, 4)
     """
-    return rotator(-theta) @ mueller @ rotator(theta)
+    if mueller.shape == (4, 4):
+        mueller_rotated = rotator(-theta) @ mueller @ rotator(theta)
+        return mueller_rotated
+    elif mueller.shape == (3, 3):
+        mueller4x4 = np.zeros((4, 4), dtype=mueller.dtype)
+        mueller4x4[:3, :3] = mueller
+        mueller_rotated4x4 = rotateMueller(mueller4x4, theta)
+        mueller_rotated = mueller_rotated4x4[:3, :3]
+        return mueller_rotated
 
 def polarizer(theta):
     """Generate Mueller matrix of linear polarizer
