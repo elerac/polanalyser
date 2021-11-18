@@ -167,9 +167,8 @@ def hwp(theta):
     return retarder(np.pi, theta)
 
 
-def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
-    """
-    Apply color map to the Mueller matrix image and save them side by side
+def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu", add_title: bool = True):
+    """Apply color map to the Mueller matrix image and save them side by side
     
     Parameters
     ----------
@@ -185,20 +184,16 @@ def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_t
         Color map for plot.
         https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
     add_title : bool
-        Whether to insert a title (e.g. m11, m12...) in the image.
+        Whether to insert a title (e.g. m00, m01...) in the image.
     """
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import ImageGrid
-    try:
-        plt.rcParams["mpl_toolkits.legacy_colorbar"] = False
-    except KeyError:
-        pass
     
     # Check for 'img_muller' shape
     height, width, channel = img_mueller.shape
-    if channel==9:
+    if channel == 9:
         n = 3
-    elif channel==16:
+    elif channel == 16:
         n = 4
     else:
         raise ValueError(f"'img_mueller' shape should be (height, width, 9) or (height, width, 16): ({height}, {width}, {channel})")
@@ -209,11 +204,14 @@ def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_t
         """
         from matplotlib.offsetbox import AnchoredText
         from matplotlib.patheffects import withStroke
+
         if size is None:
             size = dict(size=plt.rcParams['legend.fontsize'])
+
         at = AnchoredText(title, loc=loc, prop=size,
                           pad=0., borderpad=0.5,
                           frameon=False, **kwargs)
+
         ax.add_artist(at)
         at.txt._text.set_path_effects([withStroke(foreground="w", linewidth=3)])
         return at
@@ -245,15 +243,12 @@ def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_t
 
         # Add title
         if add_title:
-            maintitle = "$m$$_{0}$$_{1}$".format(i//n+1, i%n+1) # m{}{}
-            t = add_inner_title(ax, maintitle, loc='lower right')
+            # maintitle = "$m$$_{0}$$_{1}$".format(i//n+1, i%n+1) # m{}{}
+            maintitle = f"$m$$_{i//n}$$_{i%n}$" # m{}{}
+            _ = add_inner_title(ax, maintitle, loc='lower right')
         
         # Add image
-        im = ax.imshow(img_mueller[:,:,i],
-                       vmin=vmin,
-                       vmax=vmax,
-                       cmap=cmap,
-                       )
+        im = ax.imshow(img_mueller[:,:,i], vmin=vmin, vmax=vmax, cmap=cmap)
 
     # Colorbar
     cbar = ax.cax.colorbar(im, ticks=[vmin, 0, vmax])
