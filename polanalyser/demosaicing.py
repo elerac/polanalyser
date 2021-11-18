@@ -52,8 +52,8 @@ def __demosaicing_mono_float(img_mpfa):
     
     Notes
     -----
-    pros: slow
-    cons: float available
+    pros: float available
+    cons: slow
     """
     height, width = img_mpfa.shape[:2]
     img_subsampled = np.zeros((height, width, 4), dtype=img_mpfa.dtype)
