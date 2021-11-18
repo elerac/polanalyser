@@ -1,42 +1,49 @@
+from typing import List, Optional
 import numpy as np
 
-def calcMueller(intensities, muellers_p, muellers_a):
-    """Calculate Mueller matrix from observed intensities and Mueller matrixes of light source and analyzer
+def calcMueller(intensities: List[np.ndarray], muellers_light: List[np.ndarray], muellers_detector: List[np.ndarray]):
+    """Calculate Mueller matrix from observed intensities and Mueller matrixes of light source and detector
+
+    This function calculates Mueller matrix image from images captured under a variety of polarimetric conditions (both light and detector side).
+    Polarimetric conditions are described by Mueller matrix form (`muellers_light` and `muellers_detector`).
+
+    The unknown Mueller matrix is calculated by the least-squares method from pairs of intensities and Muller matrices.
+    The number of input pairs must be greater than the number of Mueller matrix parameters (i.e., more than 9 or 16).
     
     Parameters
     ----------
-    intensities : np.ndarray
-        Measured intensities. (height, width, K)
-    muellers_p : np.ndarray
-        Mueller matrix of the light source. (3, 3, K) or (4, 4, K)
-    muellers_a : np.ndarray
-        Mueller matrix of the analyzer. (3, 3, K) or (4, 4, K)
+    intensities : List[np.ndarray]
+        Measured intensities.
+    muellers_light : List[np.ndarray]
+        Mueller matrix of the light source. (3, 3) or (4, 4)
+    muellers_detector : List[np.ndarray]
+        Mueller matrix of the analyzer. (3, 3) or (4, 4)
 
     Returns
     -------
     mueller : np.ndarray
         Mueller matrix. (height, width, 9) or (height, width, 16)
     """
-    if not isinstance(intensities, np.ndarray):
-        intensities = np.stack(intensities, axis=-1)  # (height, width, K)
+    lists_length = [len(intensities), len(muellers_light), len(muellers_detector)]
+    if not all(x == lists_length[0] for x in lists_length):
+        raise ValueError(f"The length of the list must be the same, not {lists_length}.")
 
-    if not isinstance(muellers_p, np.ndarray):
-        muellers_p = np.stack(muellers_p, axis=-1)  # (3, 3, K) or (4, 4, K)
-
-    if not isinstance(muellers_a, np.ndarray):
-        muellers_a = np.stack(muellers_a, axis=-1)  # (3, 3, K) or (4, 4, K)
+    # Convert List[np.ndarray] to np.ndarray
+    intensities = np.stack(intensities, axis=-1)  # (height, width, K)
+    muellers_light = np.stack(muellers_light, axis=-1)  # (3, 3, K) or (4, 4, K)
+    muellers_detector = np.stack(muellers_detector, axis=-1)  # (3, 3, K) or (4, 4, K)
     
-    K = intensities.shape[-1]
-    D = muellers_p.shape[0]  # scalar: 3 or 4
+    K = intensities.shape[-1]  # scalar
+    D = muellers_light.shape[0]  # sclar: 3 or 4
     W = np.empty((K, D*D))
     for k in range(K):
-        P1 = np.expand_dims(muellers_p[:, 0, k], axis=1)  # [m11, m21, m31] or [m11, m21, m31, m41]
-        A1 = np.expand_dims(muellers_a[0, :, k], axis=0)  # [m11, m12, m13] or [m11, m12, m13, m14]
+        P1 = np.expand_dims(muellers_light[:, 0, k], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+        A1 = np.expand_dims(muellers_detector[0, :, k], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
         W[k] = np.ravel((P1 @ A1).T)
 
     W_pinv = np.linalg.pinv(W)  # (D*D, K)
-    mueller = np.tensordot(W_pinv, intensities, axes=(1, -1)) # (9, height, width) or (16, height, width)
-    mueller = np.moveaxis(mueller, 0, -1) # (height, width, 9) or ((height, width, 16)
+    mueller = np.tensordot(W_pinv, intensities, axes=(1, -1))  # (9, height, width) or (16, height, width)
+    mueller = np.moveaxis(mueller, 0, -1)  # (height, width, 9) or ((height, width, 16)
     return mueller
 
 def rotator(theta):
