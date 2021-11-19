@@ -156,7 +156,7 @@ class PolarizationImages(list):
             if image is None:
                 raise FileNotFoundError(f"'{filename_img}' not found.")
 
-            mueller_psa = loaded_dict.pop("mueller_psa")
-            mueller_psg = loaded_dict.pop("mueller_psg")
+            mueller_psa = loaded_dict.pop("mueller_psa", None)
+            mueller_psg = loaded_dict.pop("mueller_psg", None)
 
             self.add(image, mueller_psa, mueller_psg, **loaded_dict)
