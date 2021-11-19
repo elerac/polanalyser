@@ -1,11 +1,11 @@
 from typing import List, Optional
 import numpy as np
 
-def calcMueller(intensities: List[np.ndarray], muellers_light: List[np.ndarray], muellers_detector: List[np.ndarray]):
-    """Calculate Mueller matrix from observed intensities and Mueller matrixes of light source and detector
+def calcMueller(intensities: List[np.ndarray], muellers_psg: List[np.ndarray], muellers_psa: List[np.ndarray]):
+    """Calculate Mueller matrix from observed intensities and Mueller matrixes of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
-    This function calculates Mueller matrix image from images captured under a variety of polarimetric conditions (both light and detector side).
-    Polarimetric conditions are described by Mueller matrix form (`muellers_light` and `muellers_detector`).
+    This function calculates Mueller matrix image from images captured under a variety of polarimetric conditions (both PSG and PSA).
+    Polarimetric conditions are described by Mueller matrix form (`muellers_psg` and `muellers_psa`).
 
     The unknown Mueller matrix is calculated by the least-squares method from pairs of intensities and Muller matrices.
     The number of input pairs must be greater than the number of Mueller matrix parameters (i.e., more than 9 or 16).
@@ -14,31 +14,31 @@ def calcMueller(intensities: List[np.ndarray], muellers_light: List[np.ndarray],
     ----------
     intensities : List[np.ndarray]
         Measured intensities.
-    muellers_light : List[np.ndarray]
-        Mueller matrix of the light source. (3, 3) or (4, 4)
-    muellers_detector : List[np.ndarray]
-        Mueller matrix of the analyzer. (3, 3) or (4, 4)
+    muellers_psg : List[np.ndarray]
+        Mueller matrix of the Polarization State Generator (PSG). (3, 3) or (4, 4)
+    muellers_psa : List[np.ndarray]
+        Mueller matrix of the Polarization State Analyzer (PSA). (3, 3) or (4, 4)
 
     Returns
     -------
     mueller : np.ndarray
         Mueller matrix. (height, width, 9) or (height, width, 16)
     """
-    lists_length = [len(intensities), len(muellers_light), len(muellers_detector)]
+    lists_length = [len(intensities), len(muellers_psg), len(muellers_psa)]
     if not all(x == lists_length[0] for x in lists_length):
         raise ValueError(f"The length of the list must be the same, not {lists_length}.")
 
     # Convert List[np.ndarray] to np.ndarray
     intensities = np.stack(intensities, axis=-1)  # (height, width, K)
-    muellers_light = np.stack(muellers_light, axis=-1)  # (3, 3, K) or (4, 4, K)
-    muellers_detector = np.stack(muellers_detector, axis=-1)  # (3, 3, K) or (4, 4, K)
+    muellers_psg = np.stack(muellers_psg, axis=-1)  # (3, 3, K) or (4, 4, K)
+    muellers_psa = np.stack(muellers_psa, axis=-1)  # (3, 3, K) or (4, 4, K)
     
     K = intensities.shape[-1]  # scalar
-    D = muellers_light.shape[0]  # sclar: 3 or 4
+    D = muellers_psg.shape[0]  # sclar: 3 or 4
     W = np.empty((K, D*D))
     for k in range(K):
-        P1 = np.expand_dims(muellers_light[:, 0, k], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
-        A1 = np.expand_dims(muellers_detector[0, :, k], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+        P1 = np.expand_dims(muellers_psg[:, 0, k], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+        A1 = np.expand_dims(muellers_psa[0, :, k], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
         W[k] = np.ravel((P1 @ A1).T)
 
     W_pinv = np.linalg.pinv(W)  # (D*D, K)

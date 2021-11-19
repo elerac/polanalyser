@@ -32,17 +32,17 @@ class NdarrayDecoder(json.JSONDecoder):
         return obj
 
 class PolarizationImages(list):
-    """Provide raw polarization images and paired Mueller matrix (both detector and light source).
+    """Provide raw polarization images and paired Mueller matrix (both Polarization State Generator (PSG) and Polarization State Analyzer (PSA)).
 
     Examples
     --------
-    Register and save polarization images with Mueller matix of detector (e.g., passive measurment using polarization camera)
+    Register and save polarization images with Mueller matix of PSA (e.g., passive measurment using polarization camera)
 
     >>> pimages = PolarizationImages()
     >>> for _ in range(4):
     ...     image = np.random.rand(256, 256, 3).astype(np.float32)
-    ...     mueller_detector = np.random.rand(4, 4)
-    ...     pimages.add(image, mueller_detector)
+    ...     mueller_psa = np.random.rand(4, 4)
+    ...     pimages.add(image, mueller_psa)
     >>> pimages.save("test_pimages")
 
     Register and save polarization images with pair of Mueller matrices (e.g., ellipsometer, dual-rotating-retarder)
@@ -50,9 +50,9 @@ class PolarizationImages(list):
     >>> pimages = PolarizationImages()
     >>> for _ in range(16):
     ...     image = np.random.rand(256, 256, 3).astype(np.float32)
-    ...     mueller_detector = np.random.rand(4, 4)
-    ...     mueller_light = np.random.rand(4, 4)
-    ...     pimages.add(image, mueller_detector, mueller_light)
+    ...     mueller_psa = np.random.rand(4, 4)
+    ...     mueller_psg = np.random.rand(4, 4)
+    ...     pimages.add(image, mueller_psa, mueller_psg)
     >>> pimages.save("test_pimages")
 
     Load polarization images (iterate)
@@ -62,8 +62,8 @@ class PolarizationImages(list):
     16
     >>> for pimage in pimages:
     ...     image = pimage["image"]
-    ...     mueller_detector = pimage["mueller_detector"]
-    ...     mueller_light = pimage["mueller_light"]
+    ...     mueller_psa = pimage["mueller_psa"]
+    ...     mueller_psg = pimage["mueller_psg"]
 
     Load polarization images (list of objects)
 
@@ -77,18 +77,18 @@ class PolarizationImages(list):
     <class 'numpy.ndarray'>
     >>> images[0].shape
     (256, 256, 3)
-    >>> muellers_light = pimages.mueller_light
-    >>> muellers_detector = pimages.mueller_detector
+    >>> muellers_psg = pimages.mueller_psg
+    >>> muellers_psa = pimages.mueller_psa
 
     Register optional values
 
     >>> pimages = PolarizationImages()
     >>> image = np.random.rand(256, 256, 3).astype(np.float32)
-    >>> mueller_detector = np.random.rand(4, 4)
-    >>> pimages.add(image, mueller_detector, polarizer_angle=0)
-    >>> pimages.add(image, mueller_detector, polarizer_angle=45)
-    >>> pimages.add(image, mueller_detector, polarizer_angle=90)
-    >>> pimages.add(image, mueller_detector, polarizer_angle=135)
+    >>> mueller_psa = np.random.rand(4, 4)
+    >>> pimages.add(image, mueller_psa, polarizer_angle=0)
+    >>> pimages.add(image, mueller_psa, polarizer_angle=45)
+    >>> pimages.add(image, mueller_psa, polarizer_angle=90)
+    >>> pimages.add(image, mueller_psa, polarizer_angle=135)
     >>> pimages.polarizer_angle
     [0, 45, 90, 135]
     """
@@ -116,10 +116,10 @@ class PolarizationImages(list):
             else:
                 raise
 
-    def add(self, image: np.ndarray, mueller_detector: np.ndarray, mueller_light: Optional[np.ndarray] = None, **optional_values: Dict[str, Any]) -> None:
+    def add(self, image: np.ndarray, mueller_psa: np.ndarray, mueller_psg: Optional[np.ndarray] = None, **optional_values: Dict[str, Any]) -> None:
         dict_obj = {"image": image, 
-                    "mueller_detector": mueller_detector, 
-                    "mueller_light": mueller_light, 
+                    "mueller_psa": mueller_psa, 
+                    "mueller_psg": mueller_psg, 
                     **optional_values}
         self.append(dict_obj)
 
@@ -156,7 +156,7 @@ class PolarizationImages(list):
             if image is None:
                 raise FileNotFoundError(f"'{filename_img}' not found.")
 
-            mueller_detector = loaded_dict.pop("mueller_detector")
-            mueller_light = loaded_dict.pop("mueller_light")
+            mueller_psa = loaded_dict.pop("mueller_psa")
+            mueller_psg = loaded_dict.pop("mueller_psg")
 
-            self.add(image, mueller_detector, mueller_light, **loaded_dict)
+            self.add(image, mueller_psa, mueller_psg, **loaded_dict)

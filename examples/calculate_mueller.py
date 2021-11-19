@@ -13,7 +13,7 @@ def main():
     pimages = pa.io.PolarizationImages(folder_path)
     
     print("Calculate Mueller matrix")
-    img_mueller = pa.calcMueller(pimages.image, pimages.mueller_light, pimages.mueller_detector)
+    img_mueller = pa.calcMueller(pimages.image, pimages.mueller_psg, pimages.mueller_psa)
     
     print(img_mueller.shape, img_mueller.dtype)
 

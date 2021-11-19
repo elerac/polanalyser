@@ -76,10 +76,10 @@ The [**Mueller matrix**](https://en.wikipedia.org/wiki/Mueller_calculus) represe
 
 We can measure the unknown Mueller matrix by changing the polarization state of both the light and the detector. The following figure shows a schematic diagram to measure the unknown Mueller matrix **M**.
 ![](documents/mueller_setup.png)
-*I* denotes the intensity of the unpolarized light source. **M_light** and **M_detector** represent the polarization states in Mueller matrix form. Polarization state generator/analyzer are commonly composed of the basic optical elements (i.e., linear polarizer and retarder). 
-The detector measures the intensity *f* expressed by *f* = [ **M_detector** **M** **M_light** *I* ]00. [...]00 extracts the (0, 0) component of the matrix.
+*I* denotes the intensity of the unpolarized light source. **M_PSG** and **M_PSA** represent the Polarization state generator and analyzer (PSG and PSA) in Mueller matrix form. PSG and PSA are commonly composed of the basic optical elements (i.e., linear polarizer and retarder). 
+The detector measures the intensity *f* expressed by *f* = [ **M_PSA** **M** **M_PSG** *I* ]00. [...]00 extracts the (0, 0) component of the matrix.
 
-Measuring *f* by changing many combinations of **M_light** and **M_detector** can estimate the unknown Mueller matrix **M** with a linear least-squares method.
+Measuring *f* by changing many combinations of **M_PSG** and **M_PSA** can estimate the unknown Mueller matrix **M** with a linear least-squares method.
 
 The following code shows the example to estimate the 3x3 Mueller matrix image.
 ```python
@@ -92,13 +92,13 @@ pimages = pa.io.PolarizationImages(folder_path)
 
 print(len(pimages))  # 16
 print(pimages.image[0].shape)  # (2048, 2448)
-print(pimages.mueller_light[0].shape)  # (3, 3)
-print(pimages.mueller_detector[0].shape)  # (3, 3)
+print(pimages.mueller_psg[0].shape)  # (3, 3)
+print(pimages.mueller_psa[0].shape)  # (3, 3)
 
 # Calculate Mueller matrix
 img_mueller = pa.calcMueller(pimages.image, 
-                             pimages.mueller_light, 
-                             pimages.mueller_detector)
+                             pimages.mueller_psg, 
+                             pimages.mueller_psa)
 
 print(img_mueller.shape)  # (2048, 2448, 9)
 
