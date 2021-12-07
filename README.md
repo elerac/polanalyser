@@ -10,7 +10,6 @@ It can be used for
 * OpenCV
 * Numpy
 * matplotlib (optional)
-* Numba (optional)
 
 ## Installation
 ```sh

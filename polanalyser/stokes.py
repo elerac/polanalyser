@@ -2,7 +2,7 @@ import warnings
 import cv2
 import numpy as np
 from .mueller import polarizer
-from .util import njit_if_available
+
 
 def calcStokes(intensities, muellers):
     """Calculate stokes vector from observed intensities and mueller matrix
@@ -54,7 +54,6 @@ def calcLinearStokes(intensities, thetas):
     muellers = [ polarizer(theta)[..., :3, :3] for theta in thetas ]
     return calcStokes(intensities, muellers)
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToImax(img_stokes):
     """
     Convert stokes vector image to Imax image
@@ -74,7 +73,6 @@ def cvtStokesToImax(img_stokes):
     S2 = img_stokes[..., 2]
     return (S0+np.sqrt(S1**2+S2**2))*0.5
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToImin(img_stokes):
     """
     Convert stokes vector image to Imin image
@@ -94,7 +92,6 @@ def cvtStokesToImin(img_stokes):
     S2 = img_stokes[..., 2]
     return (S0-np.sqrt(S1**2+S2**2))*0.5
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToDoLP(img_stokes):
     """
     Convert stokes vector image to DoLP (Degree of Linear Polarization) image
@@ -114,7 +111,7 @@ def cvtStokesToDoLP(img_stokes):
     S2 = img_stokes[..., 2]
     return np.sqrt(S1**2+S2**2)/S0
 
-@njit_if_available(parallel=True, cache=True)
+
 def cvtStokesToAoLP(img_stokes):
     """
     Convert stokes vector image to AoLP (Angle of Linear Polarization) image
@@ -133,7 +130,6 @@ def cvtStokesToAoLP(img_stokes):
     S2 = img_stokes[..., 2]
     return np.mod(0.5*np.arctan2(S2, S1), np.pi)
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToIntensity(img_stokes):
     """
     Convert stokes vector image to intensity image
@@ -151,7 +147,6 @@ def cvtStokesToIntensity(img_stokes):
     S0 = img_stokes[..., 0]
     return S0*0.5
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToDiffuse(img_stokes):
     """
     Convert stokes vector image to diffuse image
@@ -169,7 +164,6 @@ def cvtStokesToDiffuse(img_stokes):
     Imin = cvtStokesToImin(img_stokes)
     return 1.0*Imin
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToSpecular(img_stokes):
     """
     Convert stokes vector image to specular image
@@ -188,7 +182,6 @@ def cvtStokesToSpecular(img_stokes):
     S2 = img_stokes[..., 2]
     return np.sqrt(S1**2+S2**2) #same as Imax-Imin
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToDoP(img_stokes):
     """
     Convert stokes vector image to DoP (Degree of Polarization) image
@@ -209,7 +202,6 @@ def cvtStokesToDoP(img_stokes):
     S3 = img_stokes[..., 3]
     return np.sqrt(S1**2+S2**2+S3**2)/S0
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToEllipticityAngle(img_stokes):
     """
     Convert stokes vector image to ellipticity angle image
@@ -229,7 +221,6 @@ def cvtStokesToEllipticityAngle(img_stokes):
     S3 = img_stokes[..., 3]
     return 0.5*np.arctan2(S3, np.sqrt(S1**2+S2**2))
 
-@njit_if_available(parallel=True, cache=True)
 def cvtStokesToDoCP(img_stokes):
     """
     Convert stokes vector image to DoCP (Degree of Circular Polarization) image
