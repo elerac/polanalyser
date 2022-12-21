@@ -7,9 +7,9 @@ It can be used for
 * [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
 
 ## Requirement
-* OpenCV
 * Numpy
-* matplotlib (optional)
+* OpenCV
+* matplotlib
 
 ## Installation
 ```sh
@@ -17,9 +17,9 @@ pip install git+https://github.com/elerac/polanalyser
 ```
 
 ## Polarization Image Dataset
-A dataset of images taken by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
+Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
 
-[**Click here and download dataset**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+[**[Click here and download dataset]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
 
 ## Usage
@@ -34,7 +34,7 @@ img_raw = cv2.imread("dataset/dragon.png", 0)
 
 img_demosaiced = pa.demosaicing(img_raw)
 
-img_0, img_45, img_90, img_135 = cv2.split(img_demosaiced)
+img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
 ```
 
 ### Analysis of Stokes vector
@@ -55,12 +55,12 @@ angles = np.deg2rad([0, 45, 90, 135])
 img_stokes = pa.calcStokes(img_demosaiced, angles)
 
 # Decompose the Stokes vector into its components
-img_S0, img_S1, img_S2 = cv2.split(img_stokes)
+img_s0, img_s1, img_s2 = cv2.split(img_stokes)
 
 # Convert the Stokes vector to Intensity, DoLP and AoLP
 img_intensity = pa.cvtStokesToIntensity(img_stokes)
-img_DoLP      = pa.cvtStokesToDoLP(img_stokes)
-img_AoLP      = pa.cvtStokesToAoLP(img_stokes)
+img_dolp = pa.cvtStokesToDoLP(img_stokes)
+img_aolp = pa.cvtStokesToAoLP(img_stokes)
 ```
 
 ||Example of results | |
@@ -86,20 +86,21 @@ import cv2
 import polanalyser as pa
 
 # Read all images
-folder_path = "dataset/mueller/various3x3"
-pimages = pa.io.PolarizationImages(folder_path)
+path = "dataset/mueller/various3x3"
+pcontainer = pa.PolarizationContainer(path)
+image_list = pcontainer.get_list("image")
+mueller_psg_list = pcontainer.get_list("mueller_psg")
+mueller_psa_list = pcontainer.get_list("mueller_psa")
 
-print(len(pimages))  # 16
-print(pimages.image[0].shape)  # (2048, 2448)
-print(pimages.mueller_psg[0].shape)  # (3, 3)
-print(pimages.mueller_psa[0].shape)  # (3, 3)
+print(len(pcontainer))  # 16
+print(image_list[0].shape)  # (2048, 2448)
+print(mueller_psg_list[0].shape)  # (3, 3)
+print(mueller_psa_list[0].shape)  # (3, 3)
 
 # Calculate Mueller matrix
-img_mueller = pa.calcMueller(pimages.image, 
-                             pimages.mueller_psg, 
-                             pimages.mueller_psa)
+img_mueller = pa.calcMueller(image_list, mueller_psg_list, mueller_psa_list)
 
-print(img_mueller.shape)  # (2048, 2448, 9)
+print(img_mueller.shape)  # (2048, 2448, 3, 3)
 
 # Visualize Mueller matrix image
 pa.plotMueller("plot_mueller.png", img_mueller, vabsmax=2.0)
