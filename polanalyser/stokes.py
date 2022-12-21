@@ -1,248 +1,265 @@
-import cv2
+from typing import List
 import numpy as np
 from .mueller import polarizer
 
 
-def calcStokes(intensities, muellers):
-    """Calculate stokes vector from observed intensities and mueller matrix
+def calcStokes(intensities: List[np.ndarray], muellers: List[np.ndarray]) -> np.ndarray:
+    """Calculate stokes parameters from measured intensities and mueller matrices
 
     Parameters
     ----------
-    intensities : np.ndarray
-      Measured intensities. (height, width, K)
-    muellers : np.ndarray
-      Mueller matrix. (3, 3, K) or (4, 4, K)
+    intensities : List[np.ndarray]
+        List of intensities (ors)
+    muellers : List[np.ndarray]
+        List of mueller matrices
 
     Returns
     -------
     stokes : np.ndarray
-      Stokes vector. (height, width, 3) or (height, width, 4)
+        Calculated stokes parameters
+
+    Examples
+    --------
+    Calculate the unknown stokes parameters from the measured intensity with QWP and polarizer
+
+    >>> stokes = np.array([1.0, 0.1, -0.3, 0.01])  # Unknown stokes parameterss
+    >>> intensities = []
+    >>> muellers = []
+    >>> for angle in np.deg2rad([0.0, 22.5, 45.0, 67.5]):
+    ...     mueller = pa.polarizer(0) @ pa.qwp(angle)
+    ...     intensity = (mueller @ stokes)[0]
+    ...     intensities.append(intensity)
+    ...     muellers.append(mueller)
+    >>> stokes_pred = pa.calcStokes(intensities, muellers)
+    >>> stokes_pred
+    [1.0, 0.1, -0.3, 0.01]
+    >>> np.allclose(stokes, stokes_pred)
+    True
     """
-    if not isinstance(intensities, np.ndarray):
-        intensities = np.stack(intensities, axis=-1)  # (height, width, K)
+    # Convert ArrayLike object to np.ndarray
+    intensities = np.array(intensities)  # (len, *)
+    muellers = np.array(muellers)  # (len, *)
 
-    if not isinstance(muellers, np.ndarray):
-        muellers = np.stack(muellers, axis=-1)  # (3, 3, K) or (4, 4, K)
+    # Check the number of elements
+    len_intensities = len(intensities)
+    len_muellers = len(muellers)
+    if len_intensities != len_muellers:
+        raise ValueError(f"The number of elements must be same, not {len_intensities} != {len_muellers}.")
 
-    # 1D array case
-    if muellers.ndim == 1:    
-        thetas = muellers
-        return calcLinearStokes(intensities, thetas)
+    # If the shape of `muellers` is a 1D array (each element is scalar), this function treats `muellers` as the angles of a linear polarizer.
+    if muellers.ndim == 1:
+        polarizer_angles = muellers
+        return calcLinearStokes(intensities, polarizer_angles)
 
-    A = muellers[0].T  # [m11, m12, m13] (K, 3) or [m11, m12, m13, m14] (K, 4)
-    A_pinv = np.linalg.pinv(A)  # (3, K) or (K, 4)
-    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1))  # (3, height, width) or (4, height, width)
-    stokes = np.moveaxis(stokes, 0, -1)  # (height, width, 3) or (height, width, 4)
+    # Move the axis of the number of elements to the last axis
+    intensities = np.moveaxis(intensities, 0, -1)  # (*, len)
+    muellers = np.moveaxis(muellers, 0, -1)  # (*, len)
+
+    # Calculate
+    A = muellers[0].T  # [m11, m12, m13] (len, 3) or [m11, m12, m13, m14] (len, 4)
+    A_pinv = np.linalg.pinv(A)  # (3, len) or (len, 4)
+    stokes = np.tensordot(A_pinv, intensities, axes=(1, -1))  # (3, *) or (4, *)
+    stokes = np.moveaxis(stokes, 0, -1)  # (*, 3) or (*, 4)
     return stokes
 
-def calcLinearStokes(intensities, thetas):
-    """Calculate only linear polarization stokes vector from observed intensity and linear polarizer angle
-    
+
+def calcLinearStokes(intensities: List[np.ndarray], polarizer_angles: List[float]) -> np.ndarray:
+    """Calculate only linear polarization stokes parameters from measured intensities and linear polarizer angle
+
     Parameters
     ----------
-    intensities : np.ndarray
-      Intensity of measurements (height, width, n)
-    theta : np.ndarray
-      Linear polarizer angles (n, )
+    intensities : List[np.ndarray]
+        List of intensities (ors)
+    muellers : List[np.ndarray]
+        List of the angles of linear polarizer
 
     Returns
     -------
-    S : np.ndarray
-      Stokes vector (height, width, 3)
+    stokes : np.ndarray
+        Calculated stokes parameters
     """
-    muellers = [ polarizer(theta)[..., :3, :3] for theta in thetas ]
+    muellers = [polarizer(angle)[:3, :3] for angle in polarizer_angles]
     return calcStokes(intensities, muellers)
 
-def cvtStokesToImax(img_stokes):
-    """
-    Convert stokes vector image to Imax image
+
+def cvtStokesToImax(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to Imax (maximum value when rotating the linear polarizer)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_Imax : np.ndarray, (height, width)
-        Imax image
+    i_max : np.ndarray
+        Imax
     """
-    S0 = img_stokes[..., 0]
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    return (S0+np.sqrt(S1**2+S2**2))*0.5
+    s0 = stokes[..., 0]
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    return (s0 + np.sqrt(s1**2 + s2**2)) * 0.5
 
-def cvtStokesToImin(img_stokes):
-    """
-    Convert stokes vector image to Imin image
+
+def cvtStokesToImin(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to Imin (minimum value when rotating the linear polarizer)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_Imin : np.ndarray, (height, width)
-        Imin image
+    i_min : np.ndarray
+        Imin
     """
-    S0 = img_stokes[..., 0]
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    return (S0-np.sqrt(S1**2+S2**2))*0.5
+    s0 = stokes[..., 0]
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    return (s0 - np.sqrt(s1**2 + s2**2)) * 0.5
 
-def cvtStokesToDoLP(img_stokes):
-    """
-    Convert stokes vector image to DoLP (Degree of Linear Polarization) image
+
+def cvtStokesToDoLP(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to DoLP (Degree of Linear Polarization)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_DoLP : np.ndarray, (height, width)
-        DoLP image ∈ [0, 1]
+    DoLP : np.ndarray
+        DoLP ∈ [0, 1]
     """
-    S0 = img_stokes[..., 0]
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    return np.sqrt(S1**2+S2**2)/S0
+    s0 = stokes[..., 0]
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    return np.sqrt(s1**2 + s2**2) / s0
 
 
-def cvtStokesToAoLP(img_stokes):
-    """
-    Convert stokes vector image to AoLP (Angle of Linear Polarization) image
+def cvtStokesToAoLP(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to AoLP (Angle of Linear Polarization)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_AoLP : np.ndarray, (height, width)
-        AoLP image ∈ [0, np.pi]
+    AoLP : np.ndarray
+        AoLP ∈ [0, np.pi]
     """
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    return np.mod(0.5*np.arctan2(S2, S1), np.pi)
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    return np.mod(0.5 * np.arctan2(s2, s1), np.pi)
 
-def cvtStokesToIntensity(img_stokes):
-    """
-    Convert stokes vector image to intensity image
+
+def cvtStokesToIntensity(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to intensity (same as s0 component)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_intensity : np.ndarray, (height, width)
-        Intensity image
+    intensity : np.ndarray
+        Intensity
     """
-    S0 = img_stokes[..., 0]
-    return S0*0.5
+    s0 = stokes[..., 0]
+    return s0
 
-def cvtStokesToDiffuse(img_stokes):
-    """
-    Convert stokes vector image to diffuse image
+
+def cvtStokesToDiffuse(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to diffuse
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
-
+    stokes : np.ndarray
+        Stokes parameters
     Returns
     -------
-    img_diffuse : np.ndarray, (height, width)
-        Diffuse image
+    diffuse : np.ndarray
+        Diffuse
     """
-    Imin = cvtStokesToImin(img_stokes)
-    return 1.0*Imin
+    Imin = cvtStokesToImin(stokes)
+    return Imin
 
-def cvtStokesToSpecular(img_stokes):
-    """
-    Convert stokes vector image to specular image
+
+def cvtStokesToSpecular(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to specular
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_specular : np.ndarray, (height, width)
-        Specular image
+    specular : np.ndarray
+        Specular
     """
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    return np.sqrt(S1**2+S2**2) #same as Imax-Imin
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    return np.sqrt(s1**2 + s2**2)  # same as Imax - Imin
 
-def cvtStokesToDoP(img_stokes):
-    """
-    Convert stokes vector image to DoP (Degree of Polarization) image
+
+def cvtStokesToDoP(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to DoP (Degree of Polarization)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_DoP : np.ndarray, (height, width)
-        DoP image ∈ [0, 1]
+    DoP : np.ndarray
+        DoP ∈ [0, 1]
     """
-    S0 = img_stokes[..., 0]
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    S3 = img_stokes[..., 3]
-    return np.sqrt(S1**2+S2**2+S3**2)/S0
+    s0 = stokes[..., 0]
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    s3 = stokes[..., 3]
+    return np.sqrt(s1**2 + s2**2 + s3**2) / s0
 
-def cvtStokesToEllipticityAngle(img_stokes):
-    """
-    Convert stokes vector image to ellipticity angle image
+
+def cvtStokesToEllipticityAngle(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to ellipticity angle
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_EllipticityAngle : np.ndarray, (height, width)
-        ellipticity angle image ∈ [-pi/4, pi/4]
+    EllipticityAngle : np.ndarray
+        ellipticity angle ∈ [-pi/4, pi/4]
     """
-    S1 = img_stokes[..., 1]
-    S2 = img_stokes[..., 2]
-    S3 = img_stokes[..., 3]
-    return 0.5*np.arctan2(S3, np.sqrt(S1**2+S2**2))
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    s3 = stokes[..., 3]
+    return 0.5 * np.arctan2(s3, np.sqrt(s1**2 + s2**2))
 
-def cvtStokesToDoCP(img_stokes):
-    """
-    Convert stokes vector image to DoCP (Degree of Circular Polarization) image
+
+def cvtStokesToDoCP(stokes: np.ndarray) -> np.ndarray:
+    """Convert stokes parameters to DoCP (Degree of Circular Polarization)
 
     Parameters
     ----------
-    img_stokes : np.ndarray, (height, width, 3)
-        Stokes vector image
+    stokes : np.ndarray
+        Stokes parameters
 
     Returns
     -------
-    img_DoCP : np.ndarray, (height, width)
-        DoCP image ∈ [-1, 1]
+    DoCP : np.ndarray
+        DoCP ∈ [-1, 1]
     """
-    S0 = img_stokes[..., 0]
-    S3 = img_stokes[..., 3]
-    return S3 / S0
-
-
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-    """
+    s0 = stokes[..., 0]
+    s3 = stokes[..., 3]
+    return s3 / s0
