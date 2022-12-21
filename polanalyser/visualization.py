@@ -3,6 +3,9 @@ import numpy as np
 import cv2
 import matplotlib
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import ImageGrid
+
 
 def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> np.ndarray:
     """Apply a matplotlib colormap on a given array
@@ -93,3 +96,49 @@ def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.
     aolp_colored = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     return aolp_colored
 
+
+def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:
+    """Apply color map to the Mueller matrix image and save them side by side
+
+    Parameters
+    ----------
+    filename : str
+        File name to be written.
+    img_mueller : np.ndarray, (height, width, 9) or (height, width, 16)
+        Mueller matrix image.
+    vabsmax : float
+        Absolute maximum value for plot. If None, the absolute maximum value of 'img_mueller' will be applied.
+    dpi : float
+        The resolution in dots per inch.
+    cmap : str
+        Color map for plot.
+    """
+    # Check
+    ndim = img_mueller.ndim
+    _height, _width, n1, n2 = img_mueller.shape
+    if not (ndim == 4 and ((n1, n2) == (3, 3) or (n1, n2) == (4, 4))):
+        raise ValueError(f"The shape of 'img_mueller' must be (height, width, 3, 3) or (height, width, 4, 4): {img_mueller.shape}")
+
+    # Set absolute maximum value
+    vabsmax = np.max(np.abs(img_mueller)) if (vabsmax is None) else vabsmax
+
+    # Plot images
+    fig = plt.figure()
+    grid = ImageGrid(fig, 111, nrows_ncols=(n1, n2), axes_pad=0.0, share_all=True, cbar_mode="single", cbar_size="3%", cbar_pad=0.10)
+    for i1 in range(n1):
+        for i2 in range(n2):
+            ax = grid[i1 * n2 + i2]
+
+            # Remove the ticks
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            im = ax.imshow(img_mueller[:, :, i1, i2], vmin=-vabsmax, vmax=vabsmax, cmap=cmap)
+
+    # Colorbar
+    cbar = ax.cax.colorbar(im, ticks=[-vabsmax, 0, vabsmax])
+    cbar.solids.set_edgecolor("face")
+    ax.cax.toggle_label(True)
+
+    # Save figure
+    plt.savefig(filename, bbox_inches="tight", dpi=dpi)
