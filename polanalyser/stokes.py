@@ -1,4 +1,3 @@
-import warnings
 import cv2
 import numpy as np
 from .mueller import polarizer
@@ -241,42 +240,9 @@ def cvtStokesToDoCP(img_stokes):
 
 
 
-def applyColorToStokes(img_stokes, gain=1.0, positive_color="green", negative_color="red"):
-    """Apply color to Stokes image
-
-    By default, positive value is "green" channel and negative value is "red" channel.
-    
     Parameters
     ----------
-    img_stokes : np.ndarray
-        Stokes image.
-    gain : float
-        Gain parameter to adjust image intensity.
-    positive_color : str
-        Select from ["blue", "green", "red"]. Default "green".
-    negative_color : str
-        Select from ["blue", "green", "red"]. Default "red".
 
     Returns
     -------
-    img_stokes_color : np.ndarray
-        Colored stokes image. shape is (*img_stokes, 3) and dtype is `uint8`
     """
-    img_stokes = gain * img_stokes
-
-    is_overflow = np.any(np.abs(img_stokes) > 255)
-    if is_overflow:
-        warnings.warn("'img_stokes' absolute values are overflowed (>255). Clip values in the range -255 to 255.", stacklevel=2)
-        img_stokes = np.clip(img_stokes, -255.0, 255.0)
-
-    img_stokes_color = np.empty((*img_stokes.shape, 3), dtype=np.uint8)
-
-    for i, color in enumerate(["blue", "green", "red"]):
-        if color == positive_color:
-            img_stokes_color[..., i] = np.maximum(img_stokes, 0)
-        elif color == negative_color:
-            img_stokes_color[..., i] = np.maximum(-img_stokes, 0)
-        else:
-            img_stokes_color[..., i] = 0
-    
-    return img_stokes_color
