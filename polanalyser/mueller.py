@@ -134,14 +134,14 @@ def polarizer(theta: float) -> np.ndarray:
     Parameters
     ----------
     theta : float
-      the angle of the linear polarizer
+        Angle of the linear polarizer
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
-    mueller = np.array([[0.5, 0.5, 0, 0], [0.5, 0.5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])  # (4, 4)
+    mueller = np.array([[0.5, 0.5, 0, 0], [0.5, 0.5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     mueller = rotateMueller(mueller, theta)
     return mueller
 
@@ -186,33 +186,33 @@ def retarder(delta: float, theta: float) -> np.ndarray:
     return mueller
 
 
-def qwp(theta):
+def qwp(theta: float) -> np.ndarray:
     """Generate Mueller matrix of Quarter-Wave Plate (QWP)
 
     Parameters
     ----------
     theta : float
-      the angle of the fast axis
+        Angle of the fast axis
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
     return retarder(np.pi / 2, theta)
 
 
-def hwp(theta):
-    """Generate Mueller matrix of Half-Wave Plate (QWP)
+def hwp(theta: float) -> np.ndarray:
+    """Generate Mueller matrix of Half-Wave Plate (HWP)
 
     Parameters
     ----------
     theta : float
-      the angle of the fast axis
+        Angle of the fast axis
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
     return retarder(np.pi, theta)
