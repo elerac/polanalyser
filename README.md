@@ -24,7 +24,7 @@ Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is av
 
 ## Usage
 ### Polarization demosaicing
-Demosaic raw polarization image taken with the polarization sensor (e.g. [IMX250MZR / MYR](https://www.sony-semicon.co.jp/e/products/IS/polarization/product.html)).
+Demosaic raw polarization image taken with the polarization sensor (e.g. [IMX250MZR / MYR](https://www.sony-semicon.com/en/products/is/industry/polarization.html)).
 ![](documents/demosaicing.png)
 ```python
 import cv2
