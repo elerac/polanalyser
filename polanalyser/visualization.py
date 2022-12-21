@@ -65,3 +65,31 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
 
     return x_colored
 
+
+def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.0, value: Union[float, np.ndarray] = 1.0) -> np.ndarray:
+    """Apply colormap to AoLP. The colormap is based on HSV.
+
+    Parameters
+    ----------
+    AoLP : np.ndarray
+        AoLP, its shape is (height, width). The range is from 0.0 to pi
+    saturation : Union[float, np.ndarray], optional
+        Saturation value(s), by default 1.0
+    value : Union[float, np.ndarray], optional
+        Value value(s), by default 1.0
+
+    Returns
+    -------
+    aolp_colored : np.ndarray
+        An applied colormap to AoLP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    ones = np.ones_like(aolp)
+
+    hue = (np.mod(aolp, np.pi) / np.pi * 179).astype(np.uint8)  # [0, pi] to [0, 179]
+    saturation = np.clip(ones * saturation * 255, 0, 255).astype(np.uint8)
+    value = np.clip(ones * value * 255, 0, 255).astype(np.uint8)
+
+    hsv = cv2.merge([hue, saturation, value])
+    aolp_colored = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    return aolp_colored
+
