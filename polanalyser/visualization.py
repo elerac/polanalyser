@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 import numpy as np
 import cv2
 import matplotlib
