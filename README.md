@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="polanalyser logo" src="documents/polanalyser_logo.png" width="50%" height="50%">
+    <img alt="polanalyser logo" src="documents/polanalyser_logo.png" height="90em">
 </p>
 
 ---
