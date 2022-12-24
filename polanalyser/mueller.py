@@ -2,23 +2,23 @@ from typing import List
 import numpy as np
 
 
-def calcMueller(intensities: List[np.ndarray], muellers_psg: List[np.ndarray], muellers_psa: List[np.ndarray]) -> np.ndarray:
+def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
     """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
     This function calculates Mueller matrix image from intensity images captured under a variety of polarimetric conditions (both PSG and PSA).
-    Polarimetric conditions are described by Mueller matrix form (`muellers_psg` and `muellers_psa`).
+    Polarimetric conditions are described by Mueller matrix form (`mueller_psg_list` and `mueller_psa_list`).
 
     The unknown Mueller matrix is calculated by the least-squares method from pairs of intensities and Muller matrices.
     The number of input pairs must be greater than the number of Mueller matrix parameters (i.e., more than 9 or 16).
 
     Parameters
     ----------
-    intensities : List[np.ndarray]
-        Measured intensities.
-    muellers_psg : List[np.ndarray]
-        Mueller matrix of the Polarization State Generator (PSG). (3, 3) or (4, 4)
-    muellers_psa : List[np.ndarray]
-        Mueller matrix of the Polarization State Analyzer (PSA). (3, 3) or (4, 4)
+    intensity_list : List[np.ndarray]
+        List of intensity
+    mueller_psg_list : List[np.ndarray]
+        List of mueller matrix of the Polarization State Generator (PSG). (3, 3) or (4, 4)
+    mueller_psa_list : List[np.ndarray]
+        List of mueller matrix of the Polarization State Analyzer (PSA). (3, 3) or (4, 4)
 
     Returns
     -------
@@ -46,9 +46,9 @@ def calcMueller(intensities: List[np.ndarray], muellers_psg: List[np.ndarray], m
     True
     """
     # Convert ArrayLike object to np.ndarray
-    intensities = np.array(intensities)  # (len, *)
-    muellers_psa = np.array(muellers_psa)  # (len, 3, 3) or (len, 4, 4)
-    muellers_psg = np.array(muellers_psg)  # (len, 3, 3) or (len, 4, 4)
+    intensities = np.array(intensity_list)  # (len, *)
+    muellers_psa = np.array(mueller_psa_list)  # (len, 3, 3) or (len, 4, 4)
+    muellers_psg = np.array(mueller_psg_list)  # (len, 3, 3) or (len, 4, 4)
 
     # Check the number of the input elements
     len_intensities = len(intensities)

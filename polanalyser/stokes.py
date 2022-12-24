@@ -3,15 +3,15 @@ import numpy as np
 from .mueller import polarizer
 
 
-def calcStokes(intensities: List[np.ndarray], muellers: List[np.ndarray]) -> np.ndarray:
+def calcStokes(intensity_list: List[np.ndarray], mueller_list: List[np.ndarray]) -> np.ndarray:
     """Calculate stokes parameters from measured intensities and mueller matrices
 
     Parameters
     ----------
-    intensities : List[np.ndarray]
-        List of intensities (ors)
-    muellers : List[np.ndarray]
-        List of mueller matrices
+    intensity_list : List[np.ndarray]
+        List of intensity
+    mueller_list : List[np.ndarray]
+        List of mueller matrix
 
     Returns
     -------
@@ -38,23 +38,23 @@ def calcStokes(intensities: List[np.ndarray], muellers: List[np.ndarray]) -> np.
 
     Calculate the unknown stokes parameters from the measured intensity with QWP and polarizer
 
-    >>> stokes = np.array([1.0, 0.1, -0.3, 0.01])  # Unknown stokes parameterss
-    >>> intensities = []
-    >>> muellers = []
+    >>> stokes = np.array([1.0, 0.1, -0.3, 0.01])  # Unknown stokes parameters
+    >>> intensity_list = []
+    >>> mueller_list = []
     >>> for angle in np.deg2rad([0.0, 22.5, 45.0, 67.5]):
     ...     mueller = pa.polarizer(0) @ pa.qwp(angle)
     ...     intensity = (mueller @ stokes)[0]
-    ...     intensities.append(intensity)
-    ...     muellers.append(mueller)
-    >>> stokes_pred = pa.calcStokes(intensities, muellers)
+    ...     intensity_list.append(intensity)
+    ...     mueller_list.append(mueller)
+    >>> stokes_pred = pa.calcStokes(intensity_list, mueller_list)
     >>> stokes_pred
     [1.0, 0.1, -0.3, 0.01]
     >>> np.allclose(stokes, stokes_pred)
     True
     """
     # Convert ArrayLike object to np.ndarray
-    intensities = np.array(intensities)  # (len, *)
-    muellers = np.array(muellers)  # (len, *)
+    intensities = np.array(intensity_list)  # (len, *)
+    muellers = np.array(mueller_list)  # (len, *)
 
     # Check the number of elements
     len_intensities = len(intensities)
