@@ -20,6 +20,22 @@ def calcStokes(intensities: List[np.ndarray], muellers: List[np.ndarray]) -> np.
 
     Examples
     --------
+    Calculate the unknown stokes parameters from the measured intensity with a rotating polarizer
+
+    >>> stokes = np.array([1.0, 0.1, -0.3])  # Unknown stokes parameters (without circular polarization)
+    >>> intensity_list = []
+    >>> mueller_list = []
+    >>> for angle in np.deg2rad([0, 45, 90, 135]):
+    ...     mueller = pa.polarizer(angle)[:3, :3]
+    ...     intensity = (mueller @ stokes)[0]
+    ...     intensity_list.append(intensity)
+    ...     mueller_list.append(mueller)
+    >>> stokes_pred = pa.calcStokes(intensity_list, mueller_list)
+    >>> stokes_pred
+    [1.0, 0.1, -0.3]
+    >>> np.allclose(stokes, stokes_pred)
+    True
+
     Calculate the unknown stokes parameters from the measured intensity with QWP and polarizer
 
     >>> stokes = np.array([1.0, 0.1, -0.3, 0.01])  # Unknown stokes parameterss
