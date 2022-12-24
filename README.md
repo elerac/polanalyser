@@ -34,7 +34,7 @@ Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is av
 - matplotlib
 
 ```sh
-pip install git+https://github.com/elerac/polanalyser
+pip install polanalyser
 ```
 
 ## Usage
