@@ -1,243 +1,200 @@
+from typing import List
 import numpy as np
 
-def calcMueller(images, radians_light, radians_camera):
-    """
-    Calculate mueller matrix from captured images and 
-    angles of the linear polarizer on the light side and the camera side.
-    
+
+def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
+    """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
+
+    This function calculates Mueller matrix image from intensity images captured under a variety of polarimetric conditions (both PSG and PSA).
+    Polarimetric conditions are described by Mueller matrix form (`mueller_psg_list` and `mueller_psa_list`).
+
+    The unknown Mueller matrix is calculated by the least-squares method from pairs of intensities and Muller matrices.
+    The number of input pairs must be greater than the number of Mueller matrix parameters (i.e., more than 9 or 16).
+
     Parameters
     ----------
-    images : np.ndarray, (height, width, N)
-        Captured images
-    radians_light : np.ndarray, (N,)
-        polarizer angles on the light side
-    radians_camera : np.ndarray, (N,)
-        polarizer angles on the camera side
+    intensity_list : List[np.ndarray]
+        List of intensity
+    mueller_psg_list : List[np.ndarray]
+        List of mueller matrix of the Polarization State Generator (PSG). (3, 3) or (4, 4)
+    mueller_psa_list : List[np.ndarray]
+        List of mueller matrix of the Polarization State Analyzer (PSA). (3, 3) or (4, 4)
+
     Returns
     -------
-    img_mueller : np.ndarray, (height, width, 9)
-        Calculated mueller matrix image
-    """
-    cos_light  = np.cos(2*radians_light)
-    sin_light  = np.sin(2*radians_light)
-    cos_camera = np.cos(2*radians_camera)
-    sin_camera = np.sin(2*radians_camera)
-    A = np.array([np.ones_like(radians_light), cos_light, sin_light, cos_camera, cos_camera*cos_light, cos_camera*sin_light, sin_camera, sin_camera*cos_light, sin_camera*sin_light]).T
-    A_pinv = np.linalg.inv(A.T @ A) @ A.T #(9, N)
-    img_mueller = np.tensordot(A_pinv, images, axes=(1,-1)) #(9, height, width)
-    img_mueller = np.moveaxis(img_mueller, 0, -1) # (height, width, 9)
-    return img_mueller
+    mueller : np.ndarray
+        Mueller matrix. The last two channels are correspondence to Mueller matrix. (*, 3, 3) or (*, 4, 4)
 
-def rotator(theta):
+    Examples
+    --------
+    >>> mueller_obj = 2 * np.random.rand(4, 4) - 1  # Unknown mueller matrix of target object
+    >>> # mueller_obj = 2 * np.random.rand(128, 256, 4, 4) - 1  # You can expand to array (like image)
+    >>> intensity_list = []
+    >>> mueller_psg_list = []
+    >>> mueller_psa_list = []
+    >>> for angle in np.linspace(0, np.pi, num=36, endpoint=False):
+    ...     mueller_psg = pa.qwp(5 * angle) @ pa.polarizer(0)
+    ...     mueller_psa = pa.polarizer(np.pi / 2) @ pa.qwp(angle)
+    ...     intensity = (mueller_psa @ mueller_obj @ mueller_psg)[..., 0, 0]
+    ...     intensity_list.append(intensity)
+    ...     mueller_psg_list.append(mueller_psg)
+    ...     mueller_psa_list.append(mueller_psa)
+    >>> mueller_pred = pa.calcMueller(intensity_list, mueller_psg_list, mueller_psa_list)
+    >>> mueller_pred.shape
+    (4, 4)
+    >>> np.allclose(mueller_obj, mueller_pred)
+    True
+    """
+    # Convert ArrayLike object to np.ndarray
+    intensities = np.array(intensity_list)  # (len, *)
+    muellers_psa = np.array(mueller_psa_list)  # (len, 3, 3) or (len, 4, 4)
+    muellers_psg = np.array(mueller_psg_list)  # (len, 3, 3) or (len, 4, 4)
+
+    # Check the number of the input elements
+    len_intensities = len(intensities)
+    len_muellers_psa = len(muellers_psa)
+    len_muellers_psg = len(muellers_psg)
+    if not (len_intensities == len_muellers_psa == len_muellers_psg):
+        raise ValueError(f"The number of elements must be same. {len_intensities}, {len_muellers_psa}, {len_muellers_psg}.")
+
+    # Check the shape of the input mueller matrices
+    mueller_psg_shape = muellers_psg[0].shape
+    mueller_psa_shape = muellers_psa[0].shape
+    if mueller_psg_shape != mueller_psa_shape:
+        raise ValueError(f"The shape of mueller matrices must be same, not {mueller_psg_shape} != {mueller_psa_shape}")
+
+    if not (mueller_psg_shape == (3, 3) or mueller_psg_shape == (4, 4)):
+        raise ValueError(f"The shape of mueller matrix must (3, 3) or (4, 4), not {mueller_psg_shape}")
+
+    # Move the axis of the number of elements to the last axis
+    intensities = np.moveaxis(intensities, 0, -1)  # (*, len)
+    muellers_psa = np.moveaxis(muellers_psa, 0, -1)  # (*, len)
+    muellers_psg = np.moveaxis(muellers_psg, 0, -1)  # (*, len)
+
+    # Calculate
+    length = len_intensities
+    W = np.empty((length, np.prod(mueller_psa_shape)))
+    for i in range(length):
+        P1 = np.expand_dims(muellers_psg[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+        A1 = np.expand_dims(muellers_psa[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+        W[i] = np.ravel((P1 @ A1).T)
+
+    W_pinv = np.linalg.pinv(W)
+    mueller = np.tensordot(W_pinv, intensities, axes=(1, -1))  # (9, *) or (16, *)
+    mueller = np.moveaxis(mueller, 0, -1)  # (*, 9) or (*, 16)
+    mueller = np.reshape(mueller, (*mueller.shape[:-1], *mueller_psa_shape))  # (*, 3, 3) or (*, 4, 4)
+    return mueller
+
+
+def rotator(theta: float) -> np.ndarray:
     """Generate Mueller matrix of rotation
 
     Parameters
     ----------
     theta : float
-      the angle of rotation
+        The angle of rotation
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
-    ones = np.ones_like(theta)
-    zeros = np.zeros_like(theta)
-    sin2 = np.sin(2*theta)
-    cos2 = np.cos(2*theta)
-    mueller = np.array([[ones,  zeros, zeros, zeros],
-                  [zeros,  cos2,  sin2, zeros],
-                  [zeros, -sin2,  cos2, zeros],
-                  [zeros, zeros, zeros, ones]])
-    mueller = np.moveaxis(mueller, [0,1], [-2,-1])
-    return mueller
+    s = np.sin(2 * theta)
+    c = np.cos(2 * theta)
+    return np.array([[1, 0, 0, 0], [0, c, s, 0], [0, -s, c, 0], [0, 0, 0, 1]])
 
-def rotateMueller(mueller, theta):
+
+def rotateMueller(mueller: np.ndarray, theta: float) -> np.ndarray:
     """Rotate Mueller matrix
-    
+
+    Parameters
+    ----------
+    mueller : np.ndarray
+        Mueller matrix to rotate, (3, 3) or (4, 4)
+    theta : float
+        The angle of rotation
+
+    Returns
+    -------
+    mueller_rotated : np.ndarray
+        Rotated mueller matrix (3, 3) or (4, 4)
+    """
+    mueller_shape = mueller.shape[-2:]
+    if mueller_shape == (4, 4):
+        return rotator(-theta) @ mueller @ rotator(theta)
+    elif mueller_shape == (3, 3):
+        return rotator(-theta)[:3, :3] @ mueller @ rotator(theta)[:3, :3]
+    else:
+        raise ValueError(f"The shape of mueller matrix must be (3, 3) or (4, 4), not {mueller_shape}")
+
+
+def polarizer(theta: float) -> np.ndarray:
+    """Generate Mueller matrix of the linear polarizer
+
     Parameters
     ----------
     theta : float
-      the angle of rotation
+        Angle of polarizer
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix, (4, 4)
     """
-    return rotator(-theta) @ mueller @ rotator(theta)
+    s = np.sin(2 * theta)
+    c = np.cos(2 * theta)
+    return 0.5 * np.array([[1, c, s, 0], [c, c * c, s * c, 0], [s, s * c, s * s, 0], [0, 0, 0, 0]])
 
-def polarizer(theta):
-    """Generate Mueller matrix of linear polarizer
 
-    Parameters
-    ----------
-    theta : float
-      the angle of the linear polarizer
-
-    Returns
-    -------
-    mueller : np.ndarray
-      mueller matrix (4, 4)
-    """
-    mueller = np.array([[0.5, 0.5, 0, 0],
-                  [0.5, 0.5, 0, 0],
-                  [  0,   0, 0, 0],
-                  [  0,   0, 0, 0]]) # (4, 4)
-    mueller = rotateMueller(mueller, theta)
-    return mueller
-
-def retarder(delta, theta):
+def retarder(delta: float, theta: float) -> np.ndarray:
     """Generate Mueller matrix of linear retarder
-    
+
     Parameters
     ----------
     delta : float
-      the phase difference between the fast and slow axis
+        Phase difference between the fast and slow axis
     theta : float
-      the angle of the fast axis
+        Angle of the fast axis
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix, (4, 4)
     """
-    ones = np.ones_like(delta)
-    zeros = np.zeros_like(delta)
-    sin = np.sin(delta)
-    cos = np.cos(delta)
-    mueller = np.array([[ones,  zeros, zeros, zeros],
-                        [zeros, ones,  zeros, zeros],
-                        [zeros, zeros, cos,   -sin],
-                        [zeros, zeros, sin,   cos]])
-    mueller = np.moveaxis(mueller, [0,1], [-2,-1])
-    
+    s = np.sin(delta)
+    c = np.cos(delta)
+    mueller = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
     mueller = rotateMueller(mueller, theta)
     return mueller
 
-def qwp(theta):
+
+def qwp(theta: float) -> np.ndarray:
     """Generate Mueller matrix of Quarter-Wave Plate (QWP)
-    
+
     Parameters
     ----------
     theta : float
-      the angle of the fast axis
+        Angle of the fast axis
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
-    return retarder(np.pi/2, theta)
+    return retarder(np.pi / 2, theta)
 
-def hwp(theta):
-    """Generate Mueller matrix of Half-Wave Plate (QWP)
-    
+
+def hwp(theta: float) -> np.ndarray:
+    """Generate Mueller matrix of Half-Wave Plate (HWP)
+
     Parameters
     ----------
     theta : float
-      the angle of the fast axis
+        Angle of the fast axis
 
     Returns
     -------
     mueller : np.ndarray
-      mueller matrix (4, 4)
+        Mueller matrix (4, 4)
     """
     return retarder(np.pi, theta)
-
-
-def plotMueller(filename, img_mueller, vabsmax=None, dpi=300, cmap="RdBu", add_title=True):
-    """
-    Apply color map to the Mueller matrix image and save them side by side
-    
-    Parameters
-    ----------
-    filename : str
-        File name to be written.
-    img_mueller : np.ndarray, (height, width, 9) or (height, width, 16)
-        Mueller matrix image.
-    vabsmax : float
-        Absolute maximum value for plot. If None, the absolute maximum value of 'img_mueller' will be applied.
-    dpi : float
-        The resolution in dots per inch.
-    cmap : str
-        Color map for plot.
-        https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
-    add_title : bool
-        Whether to insert a title (e.g. m11, m12...) in the image.
-    """
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.axes_grid1 import ImageGrid
-    try:
-        plt.rcParams["mpl_toolkits.legacy_colorbar"] = False
-    except KeyError:
-        pass
-    
-    # Check for 'img_muller' shape
-    height, width, channel = img_mueller.shape
-    if channel==9:
-        n = 3
-    elif channel==16:
-        n = 4
-    else:
-        raise ValueError(f"'img_mueller' shape should be (height, width, 9) or (height, width, 16): ({height}, {width}, {channel})")
-    
-    def add_inner_title(ax, title, loc, size=None, **kwargs):
-        """
-        Insert the title inside image
-        """
-        from matplotlib.offsetbox import AnchoredText
-        from matplotlib.patheffects import withStroke
-        if size is None:
-            size = dict(size=plt.rcParams['legend.fontsize'])
-        at = AnchoredText(title, loc=loc, prop=size,
-                          pad=0., borderpad=0.5,
-                          frameon=False, **kwargs)
-        ax.add_artist(at)
-        at.txt._text.set_path_effects([withStroke(foreground="w", linewidth=3)])
-        return at
-        
-    # Vreta figure
-    fig = plt.figure()
-
-    # Create image grid
-    grid = ImageGrid(fig, 111,
-                     nrows_ncols=(n,n),
-                     axes_pad=0.0,
-                     share_all=True,
-                     cbar_location="right",
-                     cbar_mode="single",
-                     cbar_size="3%",
-                     cbar_pad=0.10,
-                     )
-    
-    # Set absolute maximum value
-    vabsmax = np.max(np.abs(img_mueller)) if (vabsmax is None) else vabsmax
-    vmax =  vabsmax
-    vmin = -vabsmax
-
-    # Add data to image grid
-    for i, ax in enumerate(grid):
-        # Remove the ticks
-        ax.set_xticks([])
-        ax.set_yticks([])
-
-        # Add title
-        if add_title:
-            maintitle = "$m$$_{0}$$_{1}$".format(i//n+1, i%n+1) # m{}{}
-            t = add_inner_title(ax, maintitle, loc='lower right')
-        
-        # Add image
-        im = ax.imshow(img_mueller[:,:,i],
-                       vmin=vmin,
-                       vmax=vmax,
-                       cmap=cmap,
-                       )
-
-    # Colorbar
-    cbar = ax.cax.colorbar(im, ticks=[vmin, 0, vmax])
-    cbar.solids.set_edgecolor("face")
-    ax.cax.toggle_label(True)
-    
-    # Save figure
-    plt.savefig(filename, bbox_inches='tight', dpi=dpi)
