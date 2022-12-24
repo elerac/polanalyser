@@ -3,12 +3,16 @@
 Download dataset from here.
 - https://drive.google.com/drive/folders/1W66tMue6xi0F1QSG9_sDEgeukV-8QkZs?usp=sharing
 """
-import cv2
+import argparse
 import polanalyser as pa
 
 
 def main():
-    path = "dataset/mueller/various3x3"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", type=str, default="dataset/toy_example_3x3_pc")
+    args = parser.parse_args()
+
+    path = args.input
     print(f"Load images from '{path}'")
     pcontainer = pa.PolarizationContainer(path)
 
@@ -34,7 +38,7 @@ def main():
     filename_visalize_normalized = "plot_mueller_normalized.png"
     print(f"Visualize and export to '{filename_visalize}' and '{filename_visalize_normalized}'")
     pa.plotMueller(filename_visalize, img_mueller, vabsmax=2.0)
-    pa.plotMueller(filename_visalize_normalized, img_mueller_normalized, vabsmax=1.0, add_title=True)
+    pa.plotMueller(filename_visalize_normalized, img_mueller_normalized, vabsmax=1.0)
 
 
 if __name__ == "__main__":

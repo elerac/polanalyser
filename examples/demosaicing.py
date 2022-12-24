@@ -11,7 +11,7 @@ def main():
     print(img_raw.shape)
 
     # Demosaicing
-    img_demosaiced = pa.demosaicing(img_raw)
+    img_demosaiced = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
 
     img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
 
