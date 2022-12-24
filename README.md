@@ -98,7 +98,7 @@ img_aolp = pa.cvtStokesToAoLP(img_stokes)
 
 ||Example of results | |
 |:-:|:-:|:-:|
-|Intensity|DoLP|AoLP|
+|Intensity (S0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
 What do the colors in the AoLP image represent? [See the wiki for details](https://github.com/elerac/polanalyser/wiki/How-to-Visualizing-the-AoLP-Image).
@@ -127,7 +127,7 @@ import cv2
 import polanalyser as pa
 
 # Read all images
-path = "dataset/mueller/various3x3"
+path = "dataset/toy_example_3x3_pc"
 pcontainer = pa.PolarizationContainer(path)
 image_list = pcontainer.get_list("image")
 mueller_psg_list = pcontainer.get_list("mueller_psg")
