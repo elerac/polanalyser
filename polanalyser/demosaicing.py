@@ -52,6 +52,9 @@ def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono
     if dtype not in [np.uint8, np.uint16]:
         raise TypeError(f"The dtype of input image must be `np.uint8` or `np.uint16`, not `{dtype}`")
 
+    if img_raw.ndim != 2:
+        raise ValueError(f"The dimension of the input image must be 2, not {img_raw.ndim} {img_raw.shape}")
+
     if code.is_color:
         return __demosaicing_color(img_raw, code.suffix)
     else:
