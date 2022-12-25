@@ -55,9 +55,7 @@ import polanalyser as pa
 
 img_raw = cv2.imread("dataset/dragon.png", 0)
 
-img_demosaiced = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
-
-img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
+img_000, img_045, img_090, img_135 = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
 ```
 
 ### Analysis of Stokes vector
@@ -79,8 +77,7 @@ import polanalyser as pa
 
 # Read image and demosaicing
 img_raw = cv2.imread("dataset/dragon.png", 0)
-img_demosaiced = pa.demosaicing(img_raw)
-img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
+img_000, img_045, img_090, img_135 = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
 
 # Calculate the Stokes vector per-pixel
 image_list = [img_000, img_045, img_090, img_135]
