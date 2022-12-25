@@ -7,13 +7,11 @@ import polanalyser as pa
 def main():
     # Read polarization image
     filepath = "dataset/dragon.png"
-    img_raw = cv2.imread(filepath, -1)
+    img_raw = cv2.imread(filepath, 0)
     print(img_raw.shape)
 
     # Demosaicing
-    img_demosaiced = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
-
-    img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
+    img_000, img_045, img_090, img_135 = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
 
     print("Export demosaicing images : {}".format(filepath))
     name, ext = os.path.splitext(filepath)

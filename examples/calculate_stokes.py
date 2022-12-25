@@ -26,18 +26,17 @@ def main():
 
     # Read image
     filename = args.input
-    img_raw = cv2.imread(filename, -1)
+    img_raw = cv2.imread(filename, 0)
     if img_raw is None:
         raise ValueError(f"Input image is None, '{filename}'")
 
     # Demosaicing
-    img_demosaiced = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
-    img_000, img_045, img_090, img_135 = cv2.split(img_demosaiced)
+    img_demosaiced_list = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
+    img_000, img_045, img_090, img_135 = img_demosaiced_list
 
     # Calculate Stokes vector from intensity images and polarizer angles
-    image_list = [img_000, img_045, img_090, img_135]
     angles = np.deg2rad([0, 45, 90, 135])
-    img_stokes = pa.calcStokes(image_list, angles)
+    img_stokes = pa.calcStokes(img_demosaiced_list, angles)
 
     # Stokes to parameters (s0, s1, s2, Intensity(s0) DoLP, AoLP)
     img_s0 = img_stokes[..., 0]

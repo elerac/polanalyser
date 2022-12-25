@@ -1,3 +1,4 @@
+from typing import List
 from dataclasses import dataclass
 import cv2
 import numpy as np
@@ -20,7 +21,7 @@ COLOR_PolarRGB_EA = ColorConversionCode(is_color=True, suffix="_EA")
 COLOR_PolarMono_EA = ColorConversionCode(is_color=False, suffix="_EA")
 
 
-def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono) -> np.ndarray:
+def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono) -> List[np.ndarray]:
     """Polarization demosaicing
 
     Parameters
@@ -32,8 +33,8 @@ def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono
 
     Returns
     -------
-    img_demosaiced : np.ndarray
-        Dmosaiced image. The shape is (height, width, 4). 0-45-90-135.
+    img_demosaiced_list : List[np.ndarray]
+        List of demosaiced images. The shape of each image is (height, width) or (height, width, 3).
     """
     if not isinstance(code, ColorConversionCode):
         raise TypeError(f"The type of 'code' must be 'ColorConversionCode', not {type(code)}")
@@ -61,20 +62,18 @@ def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono
         return __demosaicing_mono(img_raw, code.suffix)
 
 
-def __demosaicing_mono(img_mpfa: np.ndarray, suffix: str = "") -> np.ndarray:
+def __demosaicing_mono(img_mpfa: np.ndarray, suffix: str = "") -> List[np.ndarray]:
     """Polarization demosaicing for np.uint8 or np.uint16 type"""
     code_bg = getattr(cv2, f"COLOR_BayerBG2BGR{suffix}")
     code_gr = getattr(cv2, f"COLOR_BayerGR2BGR{suffix}")
     img_debayer_bg = cv2.cvtColor(img_mpfa, code_bg)
     img_debayer_gr = cv2.cvtColor(img_mpfa, code_gr)
-    img_000, _, img_090 = np.moveaxis(img_debayer_bg, -1, 0)
-    img_045, _, img_135 = np.moveaxis(img_debayer_gr, -1, 0)
-    img_demosaiced = np.array([img_000, img_045, img_090, img_135], dtype=img_mpfa.dtype)
-    img_demosaiced = np.moveaxis(img_demosaiced, 0, -1)
-    return img_demosaiced
+    img_000, _, img_090 = cv2.split(img_debayer_bg)
+    img_045, _, img_135 = cv2.split(img_debayer_gr)
+    return [img_000, img_045, img_090, img_135]
 
 
-def __demosaicing_color(img_cpfa: np.ndarray, suffix: str = "") -> np.ndarray:
+def __demosaicing_color(img_cpfa: np.ndarray, suffix: str = "") -> List[np.ndarray]:
     """Color-Polarization demosaicing for np.uint8 or np.uint16 type"""
     height, width = img_cpfa.shape[:2]
 
@@ -95,10 +94,15 @@ def __demosaicing_color(img_cpfa: np.ndarray, suffix: str = "") -> np.ndarray:
             img_mpfa_bgr[j::2, i::2] = img_bgr_ij
 
     # 2. Polarization demosaicing process
-    img_bgr_demosaiced = np.empty((height, width, 3, 4), dtype=img_mpfa_bgr.dtype)
-    code = ColorConversionCode(is_color=False, suffix=suffix)
+    img_bgr_000 = np.empty((height, width, 3), dtype=img_mpfa_bgr.dtype)
+    img_bgr_045 = np.empty((height, width, 3), dtype=img_mpfa_bgr.dtype)
+    img_bgr_090 = np.empty((height, width, 3), dtype=img_mpfa_bgr.dtype)
+    img_bgr_135 = np.empty((height, width, 3), dtype=img_mpfa_bgr.dtype)
     for i, img_mpfa in enumerate(cv2.split(img_mpfa_bgr)):
-        img_demosaiced = demosaicing(img_mpfa, code)
-        img_bgr_demosaiced[..., i, :] = img_demosaiced
+        img_000, img_045, img_090, img_135 = __demosaicing_mono(img_mpfa, suffix)
+        img_bgr_000[..., i] = img_000
+        img_bgr_045[..., i] = img_045
+        img_bgr_090[..., i] = img_090
+        img_bgr_135[..., i] = img_135
 
-    return img_bgr_demosaiced
+    return [img_bgr_000, img_bgr_045, img_bgr_090, img_bgr_135]
