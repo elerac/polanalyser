@@ -7,7 +7,7 @@ from scipy.linalg import svd
 
 # SVD pseudo inverse, sets all diagonals to zero except first 9 or 16 elements for a 3x3 or 4x4 matrix, respectively
 def svdpinv(I: List[np.ndarray], PSA: List[np.ndarray]) -> np.ndarray::
-	# svd, s is recipricated and V is transposed
+	# svd, s is reciprocated and V is transposed
 	UT, s, V = svd(I, full_matrices=False)
 
 	# get number of singular values from PSA shape
