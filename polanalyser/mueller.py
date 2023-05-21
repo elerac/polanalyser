@@ -1,6 +1,53 @@
 from typing import List
 import numpy as np
+from numpy import diag
+from numpy import dot
+from numpy import zeros
+from scipy.linalg import svd
 
+# SVD pseudo inverse, sets all diagonals to zero except first 4
+def svdpinv(I):
+	# svd, s is recipricated and V is transposed
+	UT, s, V = svd(I, full_matrices=False)
+
+	# set all diagonal values to zero except first 4
+	s[3:] = 0
+
+	# get the diagonal matrix for s
+	S = diag(s)
+
+	# return the reconstructed matrix
+	return UT.dot(S.dot(V))
+
+# calculate Mueller calibration matrix W
+def calcW(I: List[np.ndarray], PSA: List[np.ndarray], PSG: List[np.ndarray]):
+	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, n]
+	if I[0,0,0].shape != W[0].shape:
+		raise ValueError(f"The values of n must be equal, I = {I[0,0,0].shape} W = {W[0].shape}")
+	length = len(I)
+	psa_shape = PSA[0].shape
+	I = np.moveaxis(I, 0, -1)  # (*, len)
+	PSA = np.moveaxis(PSA, 0, -1)  # (*, len)
+	PSG = np.moveaxis(PSG, 0, -1)  # (*, len)
+	
+	# combine PSA and PSG
+	PSB = np.empty((length, np.prod(psa_shape)))
+	for i in range(length):
+		P1 = np.expand_dims(PSG[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+		A1 = np.expand_dims(PSA[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+		PSB[i] = np.ravel((P1 @ A1).T)
+	
+	Ihat = svdpinv(I)
+	return np.tensordot(PSB, Ihat, axes=(1, -1))
+
+# calculate the Meuller matrix
+def calcM(I, W, PSA)
+	psa_shape = PSA[0].shape
+	I = np.moveaxis(I, 0, -1)  # (*, len)
+	M = np.tensordot(W, I, axes=(1, -1))
+	M = np.moveaxis(M, 0, -1)  # (*, 9) or (*, 16)
+	M = np.reshape(M, (*M.shape[:-1], *psa_shape))  # (*, 3, 3) or (*, 4, 4)
+	return M
 
 def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
     """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
