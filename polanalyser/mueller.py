@@ -52,6 +52,14 @@ def calcM(I: List[np.ndarray], W: List[np.ndarray], PSA: List[np.ndarray]) -> np
 	M = np.reshape(M, (*M.shape[:-1], *psa_shape))  # (*, 3, 3) or (*, 4, 4)
 	return M
 
+# save calibration W matrix to a CSV file
+def saveW(W: List[np.ndarray]):
+	np.savetxt('WCal.csv', W, delimiter=',')
+	
+# load calibration W matrix from a CSV file
+def loadW() -> np.ndarray: 
+	return np.loadtxt('WCal.csv', delimiter=',')
+
 def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
     """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
