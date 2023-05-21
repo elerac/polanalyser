@@ -5,13 +5,16 @@ from numpy import dot
 from numpy import zeros
 from scipy.linalg import svd
 
-# SVD pseudo inverse, sets all diagonals to zero except first 4
-def svdpinv(I):
+# SVD pseudo inverse, sets all diagonals to zero except first 9 or 16 elements for a 3x3 or 4x4 matrix, respectively
+def svdpinv(I: List[np.ndarray], PSA: List[np.ndarray]) -> np.ndarray::
 	# svd, s is recipricated and V is transposed
 	UT, s, V = svd(I, full_matrices=False)
 
-	# set all diagonal values to zero except first 4
-	s[3:] = 0
+	# get number of singular values from PSA shape
+	k = len(PSA[0,0])**2
+	
+	# set all diagonal values to zero except first k elements
+	s[k:] = 0
 
 	# get the diagonal matrix for s
 	S = diag(s)
@@ -20,10 +23,10 @@ def svdpinv(I):
 	return UT.dot(S.dot(V))
 
 # calculate Mueller calibration matrix W
-def calcW(I: List[np.ndarray], PSA: List[np.ndarray], PSG: List[np.ndarray]):
+def calcW(I: List[np.ndarray], PSA: List[np.ndarray], PSG: List[np.ndarray]) -> np.ndarray:
 	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, n]
-	if I[0,0,0].shape != W[0].shape:
-		raise ValueError(f"The values of n must be equal, I = {I[0,0,0].shape} W = {W[0].shape}")
+	if len(I[0,0,0]) != len(W[0]):
+		raise ValueError(f"The values of n must be equal, I = {len(I[0,0,0])} W = {len(W[0])}")
 	length = len(I)
 	psa_shape = PSA[0].shape
 	I = np.moveaxis(I, 0, -1)  # (*, len)
@@ -41,7 +44,7 @@ def calcW(I: List[np.ndarray], PSA: List[np.ndarray], PSG: List[np.ndarray]):
 	return np.tensordot(PSB, Ihat, axes=(1, -1))
 
 # calculate the Meuller matrix
-def calcM(I, W, PSA)
+def calcM(I: List[np.ndarray], W: List[np.ndarray], PSA: List[np.ndarray]) -> np.ndarray:
 	psa_shape = PSA[0].shape
 	I = np.moveaxis(I, 0, -1)  # (*, len)
 	M = np.tensordot(W, I, axes=(1, -1))
