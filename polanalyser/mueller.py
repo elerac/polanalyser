@@ -5,13 +5,10 @@ from numpy import dot
 from numpy import zeros
 from scipy.linalg import svd
 
-# SVD pseudo inverse, sets all diagonals to zero except first 9 or 16 elements for a 3x3 or 4x4 matrix, respectively
-def svdpinv(I: List[np.ndarray], PSG: List[np.ndarray]) -> np.ndarray::
+# SVD pseudo inverse, sets all diagonals to zero except first k: 9 or 16 elements for a 3x3 or 4x4 matrix, respectively
+def svdpinv(I: List[np.ndarray], k) -> np.ndarray::
 	# svd, s is reciprocated and V is transposed
 	UT, s, V = svd(I, full_matrices=False)
-
-	# get number of singular values from PSA shape
-	k = len(PSG[0,0])**2
 	
 	# set all diagonal values to zero except first k elements
 	s[k:] = 0
@@ -22,26 +19,21 @@ def svdpinv(I: List[np.ndarray], PSG: List[np.ndarray]) -> np.ndarray::
 	# return the reconstructed matrix
 	return UT.dot(S.dot(V))
 
-# calculate Mueller calibration matrix W
-def calcW(I: List[np.ndarray], PSG: List[np.ndarray], PSA: List[np.ndarray]) -> np.ndarray:
+# calculate Mueller calibration matrix W. M is the number of reference materials used. k is the number of singular values to keep.
+def calcW(I: List[np.ndarray], PSR: List[np.ndarray], M, k) -> np.ndarray:
 	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, n]
 	if len(I[0,0,0]) != len(W[0]):
 		raise ValueError(f"The values of n must be equal, I = {len(I[0,0,0])} W = {len(W[0])}")
-	length = len(I)
-	psa_shape = PSA[0].shape
+		
 	I = np.moveaxis(I, 0, -1)  # (*, len)
-	PSA_c = np.moveaxis(PSA, 0, -1)  # (*, len)
-	PSG_c = np.moveaxis(PSG, 0, -1)  # (*, len)
+	PSR = np.moveaxis(PSR, 0, -1)  # (*, len)
 	
-	# combine PSA and PSG
-	PSB = np.empty((length, np.prod(psa_shape)))
-	for i in range(length):
-		P1 = np.expand_dims(PSG_c[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
-		A1 = np.expand_dims(PSA_c[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
-		PSB[i] = np.ravel((P1 @ A1).T)
+	# split PSR and I into M reference columns  
+	PSR = np.split(PSR, M)
+	I = np.split(I, M)
 	
-	Ihat = svdpinv(I, PSG)
-	return np.tensordot(PSB, Ihat, axes=(1, -1))
+	Ihat = svdpinv(I.T, k)
+	return np.tensordot(PSR, Ihat, axes=(1, -1)) # W[16X36] = PSR[16X6] * I^-1T[6X36]?
 
 # calculate the Meuller matrix, MShape = (3,3) or (4,4)
 def calcM(I: List[np.ndarray], W: List[np.ndarray], MShape) -> np.ndarray:
