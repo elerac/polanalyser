@@ -147,6 +147,7 @@ pa.plotMueller("plot_mueller.png", img_mueller, vabsmax=2.0)
 ![](documents/mueller_various.jpg)
 
 A calibration file for a transmission style polarization analyser can be made by using a sufficiently unpolarized light source and having nothing in the path except for the polarization filters. I suggest at least 32 different polarization configurations to calculate the 16 Meuller matrix elements. The setup I am using has 6 filter configurations for the PSG and 6 configurations for the PSA, giving 36 configurations which are repeated for a total of 3 measurements giving 108. This calibration method comes from the research paper at: https://doi.org/10.1364/AO.46.008533
+
 The following code shows how to produce and save a calibration matrix for calculating Mueller matrices. 
 
 ```python
@@ -172,6 +173,7 @@ ps.saveW(W)
 ```
 
 To use the calibration matrix the polarization configurations for each image must be in the same order the calibration configurations were performed. 
+
 The following code shows how to load and use the calibration matrix to produce a Meuller matrix image, as shown above without calibration.
 
 ```python
