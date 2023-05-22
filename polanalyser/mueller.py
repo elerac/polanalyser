@@ -11,7 +11,7 @@ def svdpinv(I: List[np.ndarray], PSG: List[np.ndarray]) -> np.ndarray::
 	UT, s, V = svd(I, full_matrices=False)
 
 	# get number of singular values from PSA shape
-	k = len(PSA[0,0])**2
+	k = len(PSG[0,0])**2
 	
 	# set all diagonal values to zero except first k elements
 	s[k:] = 0
@@ -30,26 +30,25 @@ def calcW(I: List[np.ndarray], PSG: List[np.ndarray], PSA: List[np.ndarray]) -> 
 	length = len(I)
 	psa_shape = PSA[0].shape
 	I = np.moveaxis(I, 0, -1)  # (*, len)
-	PSA = np.moveaxis(PSA, 0, -1)  # (*, len)
-	PSG = np.moveaxis(PSG, 0, -1)  # (*, len)
+	PSA_c = np.moveaxis(PSA, 0, -1)  # (*, len)
+	PSG_c = np.moveaxis(PSG, 0, -1)  # (*, len)
 	
 	# combine PSA and PSG
 	PSB = np.empty((length, np.prod(psa_shape)))
 	for i in range(length):
-		P1 = np.expand_dims(PSG[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
-		A1 = np.expand_dims(PSA[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+		P1 = np.expand_dims(PSG_c[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+		A1 = np.expand_dims(PSA_c[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
 		PSB[i] = np.ravel((P1 @ A1).T)
 	
-	Ihat = svdpinv(I)
+	Ihat = svdpinv(I, PSG)
 	return np.tensordot(PSB, Ihat, axes=(1, -1))
 
-# calculate the Meuller matrix
-def calcM(I: List[np.ndarray], W: List[np.ndarray], PSG: List[np.ndarray]) -> np.ndarray:
-	psa_shape = PSA[0].shape
+# calculate the Meuller matrix, MShape = (3,3) or (4,4)
+def calcM(I: List[np.ndarray], W: List[np.ndarray], MShape) -> np.ndarray:
 	I = np.moveaxis(I, 0, -1)  # (*, len)
 	M = np.tensordot(W, I, axes=(1, -1))
 	M = np.moveaxis(M, 0, -1)  # (*, 9) or (*, 16)
-	M = np.reshape(M, (*M.shape[:-1], *psa_shape))  # (*, 3, 3) or (*, 4, 4)
+	M = np.reshape(M, (*M.shape[:-1], *MShape))  # (*, 3, 3) or (*, 4, 4)
 	return M
 
 # save calibration W matrix to a CSV file
