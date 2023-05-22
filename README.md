@@ -146,7 +146,7 @@ pa.plotMueller("plot_mueller.png", img_mueller, vabsmax=2.0)
 
 ![](documents/mueller_various.jpg)
 
-A calibration file for a transmission style polarization analyser can be made by using a sufficiently unpolarized light source and having nothing in the path except for the polarization filters.The setup I am using has 6 filter configurations for the PSG and 6 configurations for the PSA, giving 36 configurations which are repeated for a total of 3 measurements giving 108. This calibration method comes from the research paper at: https://doi.org/10.1364/AO.46.008533
+A calibration file for a transmission style polarization analyser can be made by using a sufficiently unpolarized light source and having nothing in the path except for the polarization filters.The setup I am using has 6 filter configurations for the PSG and 6 configurations for the PSA, giving 36 configurations, N. The calibration reference samples you use should span the area or volume or the Poincare sphere you wish to analyze. M is the number of reference samples used. The known reference values for each sample go into the PSR list. This calibration method comes from the research paper at: https://doi.org/10.1364/AO.46.008533
 
 The following code shows how to produce and save a calibration matrix for calculating Mueller matrices. 
 
@@ -157,16 +157,14 @@ import polanalyser as pa
 path = "dataset/cal_example_3x3_pc"
 pcontainer = pa.PolarizationContainer(path)
 image_list = pcontainer.get_list("image")
-mueller_psg_list = pcontainer.get_list("mueller_psg")
-mueller_psa_list = pcontainer.get_list("mueller_psa")
+mueller_psr_list = pcontainer.get_list("mueller_psr")
 
-print(len(pcontainer))  # 108  6 filter configurations for PSG and 6 for PSA repeated 3 times for better precision
+print(len(pcontainer))  # N*M
 print(image_list[0].shape)  # (2048, 2448)
-print(mueller_psg_list[0].shape)  # (4, 4)
-print(mueller_psa_list[0].shape)  # (4, 4)
+print(mueller_psr_list[0].shape)  # (4, 4)
 
 # Calculate W matrix
-W = pa.calcW(image_list, mueller_psg_list, mueller_psa_list)
+W = pa.calcW(image_list, mueller_psr_list)
 
 # Save W matrix to a CSV file named WCal.csv
 ps.saveW(W)
