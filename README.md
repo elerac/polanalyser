@@ -145,3 +145,52 @@ pa.plotMueller("plot_mueller.png", img_mueller, vabsmax=2.0)
 ```
 
 ![](documents/mueller_various.jpg)
+
+A calibration file for a transmission style polarization analyser can be made by using a sufficiently unpolarized light source and having nothing in the path except for the polarization filters. I suggest at least 32 different polarization configurations to calculate the 16 Meuller matrix elements. The setup I am using has 6 filter configurations for the PSG and 6 configurations for the PSA, giving 36 configurations which are repeated for a total of 3 measurements giving 108. This calibration method comes from the research paper at: https://doi.org/10.1364/AO.46.008533
+The following code shows how to produce and save a calibration matrix for calculating Mueller matrices. 
+
+```python
+import polanalyser as pa
+
+# Read all images
+path = "dataset/cal_example_3x3_pc"
+pcontainer = pa.PolarizationContainer(path)
+image_list = pcontainer.get_list("image")
+mueller_psg_list = pcontainer.get_list("mueller_psg")
+mueller_psa_list = pcontainer.get_list("mueller_psa")
+
+print(len(pcontainer))  # 108  6 filter configurations for PSG and 6 for PSA repeated 3 times for better precision, 27 for 3 filter configurations each with 3 repeats
+print(image_list[0].shape)  # (2048, 2448)
+print(mueller_psg_list[0].shape)  # (4, 4)
+print(mueller_psa_list[0].shape)  # (4, 4)
+
+# Calculate W matrix
+W = pa.calcW(image_list, mueller_psg_list, mueller_psa_list)
+
+# Save W matrix to a CSV file named WCal.csv
+ps.saveW(W)
+```
+
+To use the calibration matrix the polarization configurations for each image must be in the same order the calibration configurations were performed. 
+The following code shows how to load and use the calibration matrix to produce a Meuller matrix image, as shown above without calibration.
+
+```python
+import polanalyser as pa
+
+# Read all images
+path = "dataset/cal_example_3x3_pc"
+pcontainer = pa.PolarizationContainer(path)
+image_list = pcontainer.get_list("image")
+
+print(len(pcontainer))  # 36  6 filter configurations for PSG and 6 for PSA, 9 for 3 filter configurations
+print(image_list[0].shape)  # (2048, 2448)
+
+# Load calibration matrix
+W = loadW()
+
+# Use the calibration matrix to calculate the Mueller matrix from the intensity images
+M = calcM(image_list, W, (4,4)) # shape at the end is either (3,3) or (4,4) depending if you used just linear filters or not
+
+# Plot the matrix as before
+pa.plotMueller("plot_mueller.png", M, vabsmax=2.0)
+```
