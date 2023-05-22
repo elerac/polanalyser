@@ -160,7 +160,7 @@ image_list = pcontainer.get_list("image")
 mueller_psg_list = pcontainer.get_list("mueller_psg")
 mueller_psa_list = pcontainer.get_list("mueller_psa")
 
-print(len(pcontainer))  # 108  6 filter configurations for PSG and 6 for PSA repeated 3 times for better precision, 27 for 3 filter configurations each with 3 repeats
+print(len(pcontainer))  # 108  6 filter configurations for PSG and 6 for PSA repeated 3 times for better precision
 print(image_list[0].shape)  # (2048, 2448)
 print(mueller_psg_list[0].shape)  # (4, 4)
 print(mueller_psa_list[0].shape)  # (4, 4)
