@@ -29,11 +29,11 @@ def calcW(I: List[np.ndarray], PSR: List[np.ndarray], M, k) -> np.ndarray:
 	PSR = np.moveaxis(PSR, 0, -1)  # (*, len)
 	
 	# split PSR and I into M reference columns  
-	PSR = np.split(PSR, M)
-	I = np.split(I, M)
+	PSR = np.split(PSR, M) # [16xM]
+	I = np.split(I, M) # [NxM]
 	
 	Ihat = svdpinv(I.T, k)
-	return np.tensordot(PSR, Ihat, axes=(1, -1)) # W[16X36] = PSR[16X6] * I^-1T[6X36]?
+	return np.tensordot(PSR, Ihat, axes=(1, -1)) # W[16xN] = PSR[16xM] * I^-1T[MxN]?
 
 # calculate the Meuller matrix, MShape = (3,3) or (4,4)
 def calcM(I: List[np.ndarray], W: List[np.ndarray], MShape) -> np.ndarray:
