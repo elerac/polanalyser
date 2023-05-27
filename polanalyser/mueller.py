@@ -25,6 +25,10 @@ def calcW(I: List[np.ndarray], PSR: List[np.ndarray], M, k) -> np.ndarray:
 	if len(I[0,0,0]) != len(W[0]):
 		raise ValueError(f"The values of n must be equal, I = {len(I[0,0,0])} W = {len(W[0])}")
 		
+	# Convert ArrayLike object to np.ndarray
+	I = np.array(I)  # (len, *)
+	PSR = np.array(PSR)  # (len, 3, 3) or (len, 4, 4)
+	
 	I = np.moveaxis(I, 0, -1)  # (*, len)
 	PSR = np.moveaxis(PSR, 0, -1)  # (*, len)
 	
