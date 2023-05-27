@@ -152,18 +152,13 @@ significant single values from the single value decomposition used to calculate 
 
 Some notes before you attempt to calibrate your polarimetry instrument:
 
-The Mueller matrix is esquisitely sensitive to changes on the surface of a material, this is very similar to the technique
-used to measure nm thick films in the semiconductor industry. So be sure to not touch the surface and store in a dry, dust-free
-container. If the samples must be cleaned then remeasure their Mueller matrix afterwards.
+The Mueller matrix is esquisitely sensitive to changes on the surface of a material, this is very similar to the technique used to measure nm thick films in the semiconductor industry. So be sure to not touch the surface and store in a dry, dust-free container. If the samples must be cleaned then remeasure their Mueller matrix afterwards.
 
-The optical constants depend not only on wavelength but also temperature. Be sure your reference samples are at the same 
-temperature as they were when measured.
+The optical constants depend not only on wavelength but also temperature. Be sure your reference samples are at the same temperature as they were when measured.
 
-The measurements will be wavelength dependent and the narrower the wavelength of light used will correspond to a more precise and
-accurate result because multiple wavelengths aren't being measured at once. I suggest using at least LEDs for a narrow band peak.
+The measurements will be wavelength dependent and the narrower the wavelength of light used will correspond to a more precise and accurate result because multiple wavelengths aren't being measured at once. I suggest using at least LEDs for a narrow band peak. A separate W calibration matrix will be required for each wavelength if your instrument is multispectral.
 
-The way the reference samples are measured matters. If you plan to build a transmission style polarimetry instrument the reference
-samples will need to be measured on a transmission style polarimetry instrument, likewise for reflective instruments. 
+The way the reference samples are measured matters. If you plan to build a transmission style polarimetry instrument the reference samples will need to be measured on a transmission style polarimetry instrument, likewise for reflective instruments. 
 
 The following code shows how to produce and save a calibration matrix for calculating Mueller matrices. 
 
