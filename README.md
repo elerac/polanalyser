@@ -293,8 +293,8 @@ The json files are prepared similarly to the files that are used in the toy exam
 		]
 	]
 	}
-}```
-
+}
+```
 
 The 4x4 matrix here is formatted just as the 3x3 matrix is in the toy example json. To produce the calibration json files you will replace the 4x4 matrix values with the Mueller matrix values you have obtained by having the Mueller matrix of your reference samples measured on an already calibrated and validated instrument. The Mueller matrix you enter for a given sample will be the same, only the filename will change to reflect which image the configuration file goes with. The json and image files will have the same name except for the file type. This could easily be automated with a short script.
 
