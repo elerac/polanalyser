@@ -1,7 +1,6 @@
 from typing import List
 import numpy as np
 
-
 def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
     """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
