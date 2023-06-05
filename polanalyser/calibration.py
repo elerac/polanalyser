@@ -19,7 +19,8 @@ def svdpinv(I: List[np.ndarray], k) -> np.ndarray::
 	# return the reconstructed matrix
 	return UT.dot(S.dot(V))
   
-# calculate Mueller calibration matrix W. M is the number of reference materials used. k is the number of singular values to keep.
+# calculate Mueller calibration matrix W. M is the number of reference materials used. 
+#	k is the number of singular values to keep.
 def calcW(I: List[np.ndarray], PSR: List[np.ndarray], M, k) -> np.ndarray:
 	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, 4, n]
 	if len(I[0,0,0]) != len(PSR[0]):
