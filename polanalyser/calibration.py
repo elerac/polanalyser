@@ -20,9 +20,9 @@ def svdpinv(I: List[np.ndarray], k) -> np.ndarray::
   
 # calculate Mueller calibration matrix W. M is the number of reference materials used. k is the number of singular values to keep.
 def calcW(I: List[np.ndarray], PSR: List[np.ndarray], M, k) -> np.ndarray:
-	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, n]
-	if len(I[0,0,0]) != len(W[0]):
-		raise ValueError(f"The values of n must be equal, I = {len(I[0,0,0])} W = {len(W[0])}")
+	# Check the shape of the input mueller matrices I = [len, xpix, ypix, n], W = [4, 4, n]
+	if len(I[0,0,0]) != len(PSR[0]):
+		raise ValueError(f"The values of n must be equal, I = {len(I[0,0,0])} PSR = {len(PSR[0, 0])}")
 		
 	# Convert ArrayLike object to np.ndarray
 	I = np.array(I)  # (len, *)
