@@ -196,10 +196,10 @@ print(len(pcontainer))  # 36  6 filter configurations for PSG and 6 for PSA, 9 f
 print(image_list[0].shape)  # (2048, 2448)
 
 # Load calibration matrix
-W = loadW()
+W = pa.loadW()
 
 # Use the calibration matrix to calculate the Mueller matrix from the intensity images
-M = calcM(image_list, W, (4,4)) # shape at the end is either (3,3) or (4,4) depending if you used just linear filters or not
+M = pa.calcM(image_list, W, (4,4)) # shape at the end is either (3,3) or (4,4) depending if you used just linear filters or not
 
 # Plot the matrix as before
 pa.plotMueller("plot_mueller.png", M, vabsmax=2.0)
@@ -298,3 +298,5 @@ The polarization filters should cover the entirety of the imaging field, otherwi
 The intensity image for a given calibration configuration file is simply the image obtained with the instrument in the correct configuration and the sample in place. Once all the intensity images and corresponding configuration files have been measured and made, you're ready to make your calibration matrix.
 
 To use your new W calibration matrix simply follow the steps above for saving it to a file then loading that file to determine the Mueller matrix of a sample. A calibration matrix also makes the Meuller matrix calculation much faster because most of the linear algebra is performed when calculating the W matrix.
+
+A calibration matrix can also be made for calculating the Stokes parameters given reference samples. Just as before, the order of the pictures and respective filters is critical for the calibration to work properly. The only real difference between the Mueller matrix calibration and the Stokes vector calibration is likely the number of analyzer configurations. Aside from that, instead of using pa.calcM you will use pa.calcS, which doesn't require the matrix shape.
