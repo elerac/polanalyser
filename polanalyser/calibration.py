@@ -4,7 +4,8 @@ from numpy import dot
 from numpy import zeros
 from scipy.linalg import svd
 
-# SVD pseudo inverse, sets all diagonals to zero except first k: 9 or 16 elements for a 3x3 or 4x4 matrix, respectively, 4 for Stokes
+# SVD pseudo inverse, sets all diagonals to zero except first k: 9 or 16 elements for a 3x3 or 4x4 matrix, respectively, 
+#	3 or 4 for Stokes vector
 def svdpinv(I: List[np.ndarray], k) -> np.ndarray::
 	# svd, s is reciprocated and V is transposed
 	UT, s, V = svd(I, full_matrices=False)
