@@ -163,7 +163,7 @@ def retarder(delta: float, theta: float) -> np.ndarray:
     """
     s = np.sin(delta)
     c = np.cos(delta)
-    mueller = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
+    mueller = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
     mueller = rotateMueller(mueller, theta)
     return mueller
 
