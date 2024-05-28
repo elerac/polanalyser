@@ -1,4 +1,5 @@
 from typing import List
+import warnings
 import numpy as np
 
 
@@ -161,6 +162,8 @@ def retarder(delta: float, theta: float) -> np.ndarray:
     mueller : np.ndarray
         Mueller matrix, (4, 4)
     """
+    warnings.warn("The definition of the retarder will be changed in the future update to match the recent works (e.g., Mitsuba3, [Baek+, SIGGRAPH Asia2021]). If you want to use the new definition, please reinstall the polanalyser with the following command:\n $ pip install git+https://github.com/elerac/polanalyser.git@next\n", FutureWarning)
+
     s = np.sin(delta)
     c = np.cos(delta)
     mueller = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])

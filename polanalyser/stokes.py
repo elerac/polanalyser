@@ -1,4 +1,5 @@
 from typing import List
+import warnings
 import numpy as np
 from .mueller import polarizer
 
@@ -276,6 +277,8 @@ def cvtStokesToDoCP(stokes: np.ndarray) -> np.ndarray:
     DoCP : np.ndarray
         DoCP ∈ [-1, 1]
     """
+    warnings.warn("The definition of the DoCP will be changed in the future update. If you want to use the new definition, please reinstall the polanalyser with the following command:\n $ pip install git+https://github.com/elerac/polanalyser.git@next\n", FutureWarning)
+
     s0 = stokes[..., 0]
     s3 = stokes[..., 3]
     return s3 / s0
