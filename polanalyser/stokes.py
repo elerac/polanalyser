@@ -274,8 +274,8 @@ def cvtStokesToDoCP(stokes: np.ndarray) -> np.ndarray:
     Returns
     -------
     DoCP : np.ndarray
-        DoCP ∈ [-1, 1]
+        DoCP ∈ [0, 1]
     """
     s0 = stokes[..., 0]
     s3 = stokes[..., 3]
-    return s3 / s0
+    return np.abs(s3) / s0
