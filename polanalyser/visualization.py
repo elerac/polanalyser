@@ -171,6 +171,49 @@ def applyColorMapToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray]
     return ellipticity_angle_vis
 
 
+def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+    """Make a grid image from a list of images
+
+    Parameters
+    ----------
+    images : npt.ArrayLike
+        List of images, its shape is (n, height, width, 3)
+    nrow : int
+        Number of rows
+    ncol : int
+        Number of columns
+    border : int, optional
+        Border width, by default 2
+    border_color : npt.ArrayLike, optional
+        Border color, by default black [0, 0, 0]
+
+    Returns
+    -------
+    grid : np.ndarray
+        Grid image, its shape is  and dtype is same as input images
+    """
+    images = np.array(images)
+    if images[0].ndim == 2:
+        images = cv2.cvtColor(images, cv2.COLOR_GRAY2BGR)
+    border_color = np.array(border_color, dtype=images.dtype)
+
+    n = len(images)
+    if n != nrow * ncol:
+        raise ValueError(f"The number of images must be equal to 'nrow * ncol': {n} != {nrow} * {ncol}")
+
+    height, width = images[0].shape[:2]
+    grid = np.full((height * nrow + border * (nrow + 1), width * ncol + border * (ncol + 1), 3), border_color, dtype=images.dtype)
+
+    for i in range(n):
+        r = i // ncol
+        c = i % ncol
+        y = r * (height + border) + border
+        x = c * (width + border) + border
+        grid[y : y + height, x : x + width] = images[i]
+
+    return grid
+
+
 def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:
     """Apply color map to the Mueller matrix image and save them side by side
 
