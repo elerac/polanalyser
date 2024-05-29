@@ -1,5 +1,6 @@
 from typing import Union, Optional
 import numpy as np
+import numpy.typing as npt
 import cv2
 import matplotlib
 
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
-def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> np.ndarray:
+def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> npt.NDArray[np.uint8]:
     """Apply a matplotlib colormap on a given array
 
     Parameters
@@ -69,7 +70,7 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
     return x_colored
 
 
-def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.0, value: Union[float, np.ndarray] = 1.0) -> np.ndarray:
+def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.0, value: Union[float, np.ndarray] = 1.0) -> npt.NDArray[np.uint8]:
     """Apply colormap to AoLP. The colormap is based on HSV.
 
     Parameters
