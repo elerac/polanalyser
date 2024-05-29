@@ -98,6 +98,26 @@ def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.
     return aolp_colored
 
 
+def applyColorMapToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.NDArray[np.uint8]:
+    """Apply colormap to DoP, DoLP, and DoCP. The colormap is black to red.
+
+    Parameters
+    ----------
+    dop : np.ndarray
+        Degree of Polarization, its shape is (height, width). The range is from 0.0 to 1.0
+    c : npt.ArrayLike, optional
+        Color of high DoP, by default [255, 255, 255]
+
+    Returns
+    -------
+    dop_colored : np.ndarray
+        An applied colormap to DoP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    colormap = (np.linspace(0, 1, 256)[..., None] * np.array(c)).astype(np.uint8)
+    dop_colored = applyColorMap(dop, colormap, 0, 1)
+    return dop_colored
+
+
 def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:
     """Apply color map to the Mueller matrix image and save them side by side
 
