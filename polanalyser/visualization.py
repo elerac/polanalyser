@@ -214,6 +214,34 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, borde
     return grid
 
 
+def makeGridMueller(img_mueller: np.ndarray, border: int = 2, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+    """Make a grid image from a Mueller matrix image
+
+    Parameters
+    ----------
+    img_mueller : np.ndarray, (height, width, 3, 3, 3) or (height, width, 4, 4, 3) or (height, width, 3, 3) or (height, width, 4, 4)
+        Mueller matrix image.
+    border : int, optional
+        Border width, by default 2
+    border_color : npt.ArrayLike, optional
+        Border color, by default black [0, 0, 0]
+
+    Returns
+    -------
+    img_mueller_grid : np.ndarray
+        Grid image of Mueller matrix, its shape is (height * nrow + border * (nrow + 1), width * ncol + border * (ncol + 1), 3) and dtype is same as input images
+    """
+    height, width, ncol, nrow = img_mueller.shape[:4]
+    if not (0 < ncol <= 4 and 0 < nrow <= 4):
+        raise ValueError(f"Mueller matrix must be smaller than 4x4: {ncol}x{nrow}")
+
+    img_mueller_flatten = np.reshape(img_mueller, (height, width, ncol * nrow, -1))
+    img_mueller_flatten = np.moveaxis(img_mueller_flatten, 2, 0)  # (ncol * nrow, height, width, -1)
+
+    img_mueller_grid = makeGrid(img_mueller_flatten, nrow, ncol, border, border_color)
+    return img_mueller_grid
+
+
 def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:
     """Apply color map to the Mueller matrix image and save them side by side
 
