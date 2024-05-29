@@ -118,6 +118,32 @@ def applyColorMapToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> n
     return dop_colored
 
 
+def applyColorMapToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = None, c_l: npt.ArrayLike = [255, 255, 0], c_c: npt.ArrayLike = [0, 255, 255]) -> npt.NDArray[np.uint8]:
+    """Apply color to ToP (Type of Polarization)
+
+    Parameters
+    ----------
+    ellipticity_angle : np.ndarray
+        Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
+    dop : Optional[np.ndarray], optional
+        Degree of Polarization, its shape is (height, width), by default None
+
+    Returns
+    -------
+    top_colored : np.ndarray
+        An applied color to ToP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    colormap = (np.linspace(1, 0, 256)[..., None] * np.array(c_l) + np.linspace(0, 1, 256)[..., None] * np.array(c_c)).astype(np.uint8)
+
+    if dop is None:
+        dop = np.ones_like(ellipticity_angle)
+
+    top = applyColorMap(np.abs(ellipticity_angle), colormap, 0, np.pi / 4)
+    top = (top * dop[..., None]).astype(np.uint8)
+
+    return top
+
+
 def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:
     """Apply color map to the Mueller matrix image and save them side by side
 
