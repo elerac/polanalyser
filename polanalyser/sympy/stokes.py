@@ -13,6 +13,11 @@ def cvtStokesToAoLP(stokes):
     return 0.5 * atan(s2 / s1)
 
 
+def cvtStokesToIntensity(stokes):
+    s0, s1, s2, s3 = stokes
+    return s0
+
+
 def cvtStokesToDoLP(stokes):
     s0, s1, s2, s3 = stokes
     return sqrt(s1**2 + s2**2) / s0
