@@ -31,3 +31,8 @@ def cvtStokesToDoCP(stokes):
 def cvtStokesToDoP(stokes):
     s0, s1, s2, s3 = stokes
     return sqrt(s1**2 + s2**2 + s3**2) / s0
+
+
+def cvtStokesToEllipticityAngle(stokes):
+    s0, s1, s2, s3 = stokes
+    return 0.5 * atan(s3 / sqrt(s1**2 + s2**2))
