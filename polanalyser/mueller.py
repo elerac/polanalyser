@@ -1,24 +1,24 @@
-from typing import List
 import numpy as np
+import numpy.typing as npt
 
 
-def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndarray], mueller_psa_list: List[np.ndarray]) -> np.ndarray:
+def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.ArrayLike) -> np.ndarray:
     """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
     This function calculates Mueller matrix image from intensity images captured under a variety of polarimetric conditions (both PSG and PSA).
-    Polarimetric conditions are described by Mueller matrix form (`mueller_psg_list` and `mueller_psa_list`).
+    Polarimetric conditions are specified by the Mueller matrices (`mm_psg` and `mm_psa`).
 
     The unknown Mueller matrix is calculated by the least-squares method from pairs of intensities and Muller matrices.
     The number of input pairs must be greater than the number of Mueller matrix parameters (i.e., more than 9 or 16).
 
     Parameters
     ----------
-    intensity_list : List[np.ndarray]
-        List of intensity
-    mueller_psg_list : List[np.ndarray]
-        List of mueller matrix of the Polarization State Generator (PSG). (3, 3) or (4, 4)
-    mueller_psa_list : List[np.ndarray]
-        List of mueller matrix of the Polarization State Analyzer (PSA). (3, 3) or (4, 4)
+    intensities : ArrayLike
+        Intensities (N, *), where N is the number of intensities and * is the shape of the image (or tensor).
+    mm_psg : ArrayLike
+        Mueller matrix of the Polarization State Generator (PSG). (N, 3, 3) or (N, 4, 4)
+    mm_psa : ArrayLike
+        Mueller matrix of the Polarization State Analyzer (PSA). (N, 3, 3) or (N, 4, 4)
 
     Returns
     -------
@@ -30,59 +30,59 @@ def calcMueller(intensity_list: List[np.ndarray], mueller_psg_list: List[np.ndar
     >>> mueller_obj = 2 * np.random.rand(4, 4) - 1  # Unknown mueller matrix of target object
     >>> # mueller_obj = 2 * np.random.rand(128, 256, 4, 4) - 1  # You can expand to array (like image)
     >>> intensity_list = []
-    >>> mueller_psg_list = []
-    >>> mueller_psa_list = []
+    >>> mm_psg_list = []
+    >>> mm_psa_list = []
     >>> for angle in np.linspace(0, np.pi, num=36, endpoint=False):
-    ...     mueller_psg = pa.qwp(5 * angle) @ pa.polarizer(0)
-    ...     mueller_psa = pa.polarizer(np.pi / 2) @ pa.qwp(angle)
-    ...     intensity = (mueller_psa @ mueller_obj @ mueller_psg)[..., 0, 0]
+    ...     mm_psg = pa.qwp(5 * angle) @ pa.polarizer(0)
+    ...     mm_psa = pa.polarizer(np.pi / 2) @ pa.qwp(angle)
+    ...     intensity = (mm_psa @ mueller_obj @ mm_psg)[..., 0, 0]
     ...     intensity_list.append(intensity)
-    ...     mueller_psg_list.append(mueller_psg)
-    ...     mueller_psa_list.append(mueller_psa)
-    >>> mueller_pred = pa.calcMueller(intensity_list, mueller_psg_list, mueller_psa_list)
+    ...     mm_psg_list.append(mueller_psg)
+    ...     mm_psa_list.append(mueller_psa)
+    >>> mueller_pred = pa.calcMueller(intensity_list, mm_psg_list, mm_psa_list)
     >>> mueller_pred.shape
     (4, 4)
     >>> np.allclose(mueller_obj, mueller_pred)
     True
     """
     # Convert ArrayLike object to np.ndarray
-    intensities = np.array(intensity_list)  # (len, *)
-    muellers_psa = np.array(mueller_psa_list)  # (len, 3, 3) or (len, 4, 4)
-    muellers_psg = np.array(mueller_psg_list)  # (len, 3, 3) or (len, 4, 4)
+    intensities = np.array(intensities)  # (N, *)
+    mm_psa = np.array(mm_psa)  # (N, 3, 3) or (N, 4, 4) or (N, 3) or (N, 4)
+    mm_psg = np.array(mm_psg)  # (N, 3, 3) or (N, 4, 4) or (N, 3) or (N, 4)
+    num = len(intensities)
+
+    # In case of stokes vector, expand the axis of the number of elements
+    if mm_psg.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
+        mm_psg = np.expand_dims(mm_psg, axis=1)
+
+    if mm_psa.ndim == 2:  # (N, 3) or (N, 4) -> (N, 3, 1) or (N, 4, 1)
+        mm_psa = np.expand_dims(mm_psa, axis=2)
 
     # Check the number of the input elements
-    len_intensities = len(intensities)
-    len_muellers_psa = len(muellers_psa)
-    len_muellers_psg = len(muellers_psg)
-    if not (len_intensities == len_muellers_psa == len_muellers_psg):
-        raise ValueError(f"The number of elements must be same. {len_intensities}, {len_muellers_psa}, {len_muellers_psg}.")
+    if not (len(intensities) == len(mm_psa) == len(mm_psg)):
+        raise ValueError(f"The number of elements must be same. {len(intensities)} != {len(mm_psa)} != {len(mm_psg)}")
 
-    # Check the shape of the input mueller matrices
-    mueller_psg_shape = muellers_psg[0].shape
-    mueller_psa_shape = muellers_psa[0].shape
-    if mueller_psg_shape != mueller_psa_shape:
-        raise ValueError(f"The shape of mueller matrices must be same, not {mueller_psg_shape} != {mueller_psa_shape}")
+    # Check the shape of the Mueller matrices
+    if not (mm_psg.ndim == 3 and mm_psg.ndim == 3):
+        raise ValueError(f"The shape of mueller matrices must be (N, 3, 3) or (N, 4, 4), not {mm_psg.shape}, {mm_psa.shape}")
 
-    if not (mueller_psg_shape == (3, 3) or mueller_psg_shape == (4, 4)):
-        raise ValueError(f"The shape of mueller matrix must (3, 3) or (4, 4), not {mueller_psg_shape}")
+    m_h = mm_psg.shape[2]
+    m_w = mm_psa.shape[1]
 
-    # Move the axis of the number of elements to the last axis
-    intensities = np.moveaxis(intensities, 0, -1)  # (*, len)
-    muellers_psa = np.moveaxis(muellers_psa, 0, -1)  # (*, len)
-    muellers_psg = np.moveaxis(muellers_psg, 0, -1)  # (*, len)
-
-    # Calculate
-    length = len_intensities
-    W = np.empty((length, np.prod(mueller_psa_shape)))
-    for i in range(length):
-        P1 = np.expand_dims(muellers_psg[:, 0, i], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
-        A1 = np.expand_dims(muellers_psa[0, :, i], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
-        W[i] = np.ravel((P1 @ A1).T)
-
+    # Construct the observation matrix
+    W = np.empty((num, m_h * m_w))
+    for i in range(num):
+        s_psg = np.expand_dims(mm_psg[i, 0, :], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
+        s_psa = np.expand_dims(mm_psa[i, :, 0], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+        W[i] = np.ravel((s_psg @ s_psa).T)
     W_pinv = np.linalg.pinv(W)
-    mueller = np.tensordot(W_pinv, intensities, axes=(1, -1))  # (9, *) or (16, *)
+
+    intensities = np.moveaxis(intensities, 0, -1)  # (*, N)
+
+    # Least-squares
+    mueller = np.tensordot(W_pinv, intensities, axes=(-1, -1))  # (9, *) or (16, *)
     mueller = np.moveaxis(mueller, 0, -1)  # (*, 9) or (*, 16)
-    mueller = np.reshape(mueller, (*mueller.shape[:-1], *mueller_psa_shape))  # (*, 3, 3) or (*, 4, 4)
+    mueller = np.reshape(mueller, (*mueller.shape[:-1], m_h, m_w))  # (*, 3, 3) or (*, 4, 4)
     return mueller
 
 
