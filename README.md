@@ -38,6 +38,12 @@ pip install polanalyser
 Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
 
 [**[Click here to download the dataset (Google Drive)]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+
+## Notations
+
+Please refer to the [notations.md](documents/notations.md) for the definition of the Stokes vector and Mueller matrix used in Polanalyser.
+
+
 ## Usage
 
 ### Polarization demosaicing
@@ -257,7 +263,7 @@ print(simplify(f))
 
 ## Related Project
 
-If you like Polanalyser, you also interested in the following paper.
+If you like Polanalyser, you are also interested in the following paper.
 
 - Ryota Maeda, Shinsaku Hiura, **Polarimetric Light Transport Analysis for Specular Inter-reflection**,  IEEE Transactions on Computational Imaging, 2024. [[Project Page]](https://elerac.github.io/projects/PolarimetricInterreflection/)
 
