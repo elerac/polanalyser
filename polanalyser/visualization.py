@@ -109,7 +109,7 @@ def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.
     return aolp_colored
 
 
-def applyColorMapToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.NDArray[np.uint8]:
+def applyColorToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.NDArray[np.uint8]:
     """Apply colormap to DoP, DoLP, and DoCP. The colormap is black to red.
 
     Parameters
@@ -129,7 +129,7 @@ def applyColorMapToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> n
     return dop_colored
 
 
-def applyColorMapToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = None, c_l: npt.ArrayLike = [255, 255, 0], c_c: npt.ArrayLike = [0, 255, 255]) -> npt.NDArray[np.uint8]:
+def applyColorToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = None, c_l: npt.ArrayLike = [255, 255, 0], c_c: npt.ArrayLike = [0, 255, 255]) -> npt.NDArray[np.uint8]:
     """Apply color to ToP (Type of Polarization)
 
     Parameters
@@ -155,7 +155,7 @@ def applyColorMapToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] 
     return top
 
 
-def applyColorMapToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = None) -> npt.NDArray[np.uint8]:
+def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = None) -> npt.NDArray[np.uint8]:
     """Apply color to CoP (Chirality of Polarization)
 
     Parameters
