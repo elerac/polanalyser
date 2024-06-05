@@ -11,16 +11,16 @@ Polanalyser is polarization image analysis tool.
 - [**Demosaicing for polarimetric image sensor**](#polarization-demosaicing)
   - Both Monochrome/Color Polarization image sensors (*e.g.*, IMX250MZR / MYR) are supported.
 - [**Analysis of Stokes vector**](#analysis-of-stokes-vector)
-  - Calculate Stokes vector from a sequence of images captured under different polarization conditions or from an image of a polarization camera.
-  - Convert Stokes vector to meaningful parameters, such as Degree of Linear Polarization (DoLP), Angle of Linear Polarization (AoLP).
+  - Calculate Stokes vector from images captured with a polarization camera or custom setup.
+  - Convert Stokes vector to meaningful parameters, such as DoLP, AoLP.
 - [**Analysis of Mueller matrix**](#analysis-of-mueller-matrix)
   - Provide basic Mueller matrix elements, such as polarizer, retarder, and rotator.
-  - Calculate Mueller matrix from images captured under a variety of polarimetric conditions.
+  - Calculate Mueller matrix from images captured under a variety of polarimetric conditions by using a least-squares method.
 - [**Visualizing polarimetric images**](#visualizing-polarimetric-images)
-  - Apply colormap to polarization images, such as AoLP and ToP.
-  - Plot Mueller matrix image.
+  - Apply colormap to polarization images, such as DoLP, AoLP, ToP, and CoP.
+  - Visualize the Mueller matrix image in grid form.
 - [**Symbolic Stokes-Mueller computation**](#symbolic-stokes-mueller-computation)
-  - Calculate the Stokes vector and Mueller matrix symbolically to understand complex combinations of optical elements.
+  - Symbolic calculation of the Stokes vector and Mueller matrix to understand complex combinations of optical elements.
 
 ## Dependencies and Installation
 
@@ -144,21 +144,15 @@ The following code shows the example to estimate the 3x3 Mueller matrix image.
 import cv2
 import polanalyser as pa
 
-# Read all images
-path = "dataset/toy_example_3x3_pc"
-pcontainer = pa.PolarizationContainer(path)
-image_list = pcontainer.get_list("image")
-mueller_psg_list = pcontainer.get_list("mueller_psg")
-mueller_psa_list = pcontainer.get_list("mueller_psa")
+# Read images and Mueller matrices of PSG and PSA
+filepath = "dataset/toy_example_3x3_pc"
+images, props = pa.imreadMultiple(filepath)
+mm_psg = props["mueller_psg"] # (16, 3, 3)
+mm_psa = props["mueller_psa"] # (16, 3, 3)
+print(images.shape)  # (16, 2048, 2448)
 
-print(len(pcontainer))  # 16
-print(image_list[0].shape)  # (2048, 2448)
-print(mueller_psg_list[0].shape)  # (3, 3)
-print(mueller_psa_list[0].shape)  # (3, 3)
-
-# Calculate Mueller matrix
-img_mueller = pa.calcMueller(image_list, mueller_psg_list, mueller_psa_list)
-
+# Calculate Mueller matrix image
+img_mueller = pa.calcMueller(images, mm_psg, mm_psa)
 print(img_mueller.shape)  # (2048, 2448, 3, 3)
 ```
 
@@ -179,7 +173,7 @@ img_top_vis = pa.applyColorToToP(img_ellipticity_angle, img_dop)
 img_cop_vis = pa.applyColorToCoP(img_ellipticity_angle)
 ```
 
-Here is an example of visualizing the Stokes vector images. The image is borrowed from the spectro-polarimetric dataset [[Jeon+, CVPR2024]](https://eschoi.com/SPDataset/).
+Here is an example of visualizing the Stokes vector images. The stokes image is borrowed from the spectro-polarimetric dataset [[Jeon+, CVPR2024]](https://huggingface.co/datasets/jyj7913/spectro-polarimetric).
 
 |||||
 |:-:|:-:|:-:|:-:|
@@ -260,4 +254,10 @@ f = (M_PSA @ M @ M_PSG * I)[0, 0]
 print(simplify(f))  
 # 0.25*m00 + 0.25*m10*cos(10*theta)**2 + 0.125*m20*sin(20*theta) - 0.25*m30*sin(10*theta) + 0.25*(m01 + m11*cos(10*theta)**2 + m21*sin(20*theta)/2 - m31*sin(10*theta))*cos(2*theta)**2 + 0.25*(m02 + m12*cos(10*theta)**2 + m22*sin(20*theta)/2 - m32*sin(10*theta))*sin(2*theta)*cos(2*theta) + 0.25*(m03 + m13*cos(10*theta)**2 + m23*sin(20*theta)/2 - m33*sin(10*theta))*sin(2*theta)
 ```
+
+## Related Project
+
+If you like Polanalyser, you also interested in the following paper.
+
+- Ryota Maeda, Shinsaku Hiura, **Polarimetric Light Transport Analysis for Specular Inter-reflection**,  IEEE Transactions on Computational Imaging, 2024. [[Project Page]](https://elerac.github.io/projects/PolarimetricInterreflection/)
 
