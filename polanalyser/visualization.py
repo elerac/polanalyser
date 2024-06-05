@@ -117,7 +117,7 @@ def applyColorToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.
     dop : np.ndarray
         Degree of Polarization, its shape is (height, width). The range is from 0.0 to 1.0
     c : npt.ArrayLike, optional
-        Color of high DoP, by default [255, 255, 255]
+        Color of high DoP, by default [255, 255, 255]. If you like black-red colormap, you can specify [0, 0, 255].
 
     Returns
     -------
