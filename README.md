@@ -8,25 +8,19 @@ Polanalyser is polarization image analysis tool.
 
 ## Key Features
 
-- [Demosaicing of a image captured by a polarization image sensor](#polarization-demosaicing)
+- [**Demosaicing for polarimetric image sensor**](#polarization-demosaicing)
   - Both Monochrome/Color Polarization image sensors (*e.g.*, IMX250MZR / MYR) are supported.
-- [Analysis of Stokes vector](#analysis-of-stokes-vector)
-  - Calculate Stokes vector from an image of a polarization camera.
+- [**Analysis of Stokes vector**](#analysis-of-stokes-vector)
+  - Calculate Stokes vector from a sequence of images captured under different polarization conditions or from an image of a polarization camera.
   - Convert Stokes vector to meaningful parameters, such as Degree of Linear Polarization (DoLP), Angle of Linear Polarization (AoLP).
-- [Analysis of Mueller matrix](#analysis-of-mueller-matrix)
+- [**Analysis of Mueller matrix**](#analysis-of-mueller-matrix)
   - Provide basic Mueller matrix elements, such as polarizer, retarder, and rotator.
   - Calculate Mueller matrix from images captured under a variety of polarimetric conditions.
-- [Visualizing polarimetric images](#visualizing-polarimetric-images)
+- [**Visualizing polarimetric images**](#visualizing-polarimetric-images)
   - Apply colormap to polarization images, such as AoLP and ToP.
   - Plot Mueller matrix image.
-- [Symbolic Stokes-Mueller computation](#symbolic-stokes-mueller-computation)
+- [**Symbolic Stokes-Mueller computation**](#symbolic-stokes-mueller-computation)
   - Calculate the Stokes vector and Mueller matrix symbolically to understand complex combinations of optical elements.
-
-## Polarization Image Dataset
-
-Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
-
-[**[Click here to download the dataset (Google Drive)]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
 ## Dependencies and Installation
 
@@ -39,6 +33,11 @@ Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is av
 pip install polanalyser
 ```
 
+## Polarization Image Dataset
+
+Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
+
+[**[Click here to download the dataset (Google Drive)]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 ## Usage
 
 ### Polarization demosaicing
@@ -126,7 +125,7 @@ print(M_QWP)
 #  [ 0.  0. -1.  0.]]
 ```
 
-We can measure the unknown Mueller matrix by changing the polarization state of both the light and the detector. The following figure shows a schematic diagram to measure the unknown Mueller matrix $\mathbf{M}$
+We can measure the unknown Mueller matrix by changing the polarization state of both the light and the detector (a.k.a. ellipsometry). The following figure shows a schematic diagram to measure the unknown Mueller matrix $\mathbf{M}$
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="documents/mueller_setup_dark.png">
@@ -161,9 +160,6 @@ print(mueller_psa_list[0].shape)  # (3, 3)
 img_mueller = pa.calcMueller(image_list, mueller_psg_list, mueller_psa_list)
 
 print(img_mueller.shape)  # (2048, 2448, 3, 3)
-
-# Visualize Mueller matrix image
-pa.plotMueller("plot_mueller.png", img_mueller, vabsmax=2.0)
 ```
 
 ![](documents/mueller_various.jpg)
@@ -177,13 +173,13 @@ Polanalyser provides functions to visualize Stokes vector images, such as AoLP, 
 
 ```python
 # Example of visualization functions
-img_aolp_vis = pa.applyColorMapToAoLP(img_aolp)
-img_dop_vis = pa.applyColorMapToDoLP(img_dolp)
+img_aolp_vis = pa.applyColorToAoLP(img_aolp)
+img_dolp_vis = pa.applyColorToDoP(img_dolp)
 img_top_vis = pa.applyColorToToP(img_ellipticity_angle, img_dop)
 img_cop_vis = pa.applyColorToCoP(img_ellipticity_angle)
 ```
 
-Here is an example of visualizing the Stokes vector images. The image is from [spectro-polarimetric dataset](https://huggingface.co/datasets/jyj7913/spectro-polarimetric).
+Here is an example of visualizing the Stokes vector images. The image is borrowed from the spectro-polarimetric dataset [[Jeon+, CVPR2024]](https://eschoi.com/SPDataset/).
 
 |||||
 |:-:|:-:|:-:|:-:|
@@ -195,6 +191,45 @@ Here is an example of visualizing the Stokes vector images. The image is from [s
 |![](documents/visualization/dop.jpeg)|![](documents/visualization/docp.jpeg)|![](documents/visualization/top.jpeg)|![](documents/visualization/cop.jpeg)|
 
 In AoLP visualization, Polanalyser provides three types of AoLP visualization: AoLP, AoLP (light), and AoLP (dark). For more details, [see the wiki page](https://github.com/elerac/polanalyser/wiki/How-to-Visualizing-the-AoLP-Image).
+
+### Mueller matrix visualization
+
+Polanalyser provides functions to apply a colormap and make a 3x3 or 4x4 grid to visualize the Mueller matrix image.
+
+
+Before visualizing the Mueller matrix image, we need to normalize the Mueller matrix. Here are three possible options, each with pros and cons. You need to choose the appropriate normalization method according to the purpose of the visualization and the chosen colormap.
+
+```python
+# Normalize Mueller matrix image
+# img_mueller: (H, W, 3, 3)
+
+# Option1: Normalize by the maximum value
+# Pros: Show values linearly
+# Cons: The small values may not be visible
+img_mueller_maxnorm = img_mueller / np.abs(img_mueller).max()  
+
+# Option2: Gamma correction
+# Pros: Enhance the small values
+# Cons: The large values become saturated
+img_mueller_gamma = pa.gammaCorrection(img_mueller_maxnorm)  
+
+# Option3: m00 norm (scale by m00 value of each pixel)
+# Pros: Enables to focus on the polarization properties
+# Cons: m00 becomes 1, and cannot represent the intensity difference
+img_mueller_m00norm = img_mueller / img_mueller[..., 0, 0][..., None, None]  
+```
+
+After normalizing the Mueller matrix image, we can apply a colormap and make a grid to visualize the Mueller matrix image.
+
+```python
+# Apply colormap and make grid
+img_mueller_norm_vis = pa.applyColorMap(img_mueller_maxnorm, "RdBu", -1, 1)  # (H, W, 3, 3, 3)
+img_mueller_norm_vis_grid = pa.makeGridMueller(img_mueller_maxnorm_vis) # (H*3, W*3, 3)
+```
+
+| Max norm | Max norm + Gamma | $m_{00}$ norm |
+|:--------------:|:--------------:|:--------------:|
+|![](documents/visualization/mueller_maxnorm_vis_grid.jpeg)|![](documents/visualization/mueller_gamma_vis_grid.jpeg)|![](documents/visualization/mueller_m00norm_vis_grid.jpeg)|
 
 
 ### Symbolic Stokes-Mueller computation
@@ -214,7 +249,7 @@ M_L1 = pas.polarizer(0)
 M_L2 = pas.polarizer(theta)
 f = (M_L2 @ M_L1)[0, 0]  
 print(simplify(f))  
-# -> 0.5*cos(theta)**2
+# 0.5*cos(theta)**2
 
 # Example 2: Ellipsometer [Azzam+, 1978][Baek+, 2020]
 M = pas.mueller()  # Symbolic Mueller matrix
@@ -223,6 +258,6 @@ M_PSG = pas.qwp(theta) @ pas.polarizer(0)
 M_PSA = pas.polarizer(0) @ pas.qwp(5 * theta)
 f = (M_PSA @ M @ M_PSG * I)[0, 0] 
 print(simplify(f))  
-# -> 0.25*m00 + 0.25*m10*cos(10*theta)**2 + 0.125*m20*sin(20*theta) - 0.25*m30*sin(10*theta) + 0.25*(m01 + m11*cos(10*theta)**2 + m21*sin(20*theta)/2 - m31*sin(10*theta))*cos(2*theta)**2 + 0.25*(m02 + m12*cos(10*theta)**2 + m22*sin(20*theta)/2 - m32*sin(10*theta))*sin(2*theta)*cos(2*theta) + 0.25*(m03 + m13*cos(10*theta)**2 + m23*sin(20*theta)/2 - m33*sin(10*theta))*sin(2*theta)
+# 0.25*m00 + 0.25*m10*cos(10*theta)**2 + 0.125*m20*sin(20*theta) - 0.25*m30*sin(10*theta) + 0.25*(m01 + m11*cos(10*theta)**2 + m21*sin(20*theta)/2 - m31*sin(10*theta))*cos(2*theta)**2 + 0.25*(m02 + m12*cos(10*theta)**2 + m22*sin(20*theta)/2 - m32*sin(10*theta))*sin(2*theta)*cos(2*theta) + 0.25*(m03 + m13*cos(10*theta)**2 + m23*sin(20*theta)/2 - m33*sin(10*theta))*sin(2*theta)
 ```
 
