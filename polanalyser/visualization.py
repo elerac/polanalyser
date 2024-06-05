@@ -8,6 +8,24 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
+def gammaCorrection(x: np.ndarray, gamma: float = 1 / 2.2) -> np.ndarray:
+    """Gamma correction for both positive and negative values. This function is particularly useful in enhancing the small values of Stokes and Mueller.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Input array. Value range should be [-1.0, 1.0] (but not limited).
+    gamma : float, optional
+        Gamma value, by default 1 / 2.2
+
+    Returns
+    -------
+    x_gamma : np.ndarray
+        Gamma corrected array.
+    """
+    return (np.abs(x) ** gamma) * np.sign(x)
+
+
 def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> npt.NDArray[np.uint8]:
     """Apply a matplotlib colormap on a given array
 
