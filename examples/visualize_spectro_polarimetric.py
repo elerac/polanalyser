@@ -38,11 +38,11 @@ def main():
     img_aolp_vis = pa.applyColorToAoLP(img_aolp)
     img_aolp_light_vis = pa.applyColorToAoLP(img_aolp, saturation=img_dolp)
     img_dolp_dark_vis = pa.applyColorToAoLP(img_aolp, value=img_dolp)
-    img_top_vis = pa.applyColorMapToToP(img_ellipticity_angle, img_dop)
-    img_cop_vis = pa.applyColorMapToCoP(img_ellipticity_angle)
-    img_dolp_vis = pa.applyColorMapToDoP(img_dolp)
-    img_docp_vis = pa.applyColorMapToDoP(img_docp)
-    img_dop_vis = pa.applyColorMapToDoP(img_dop)
+    img_top_vis = pa.applyColorToToP(img_ellipticity_angle, img_dop)
+    img_cop_vis = pa.applyColorToCoP(img_ellipticity_angle)
+    img_dolp_vis = pa.applyColorToDoP(img_dolp)
+    img_docp_vis = pa.applyColorToDoP(img_docp)
+    img_dop_vis = pa.applyColorToDoP(img_dop)
 
     cv2.imwrite("color.png", img_bgr_vis)
     cv2.imwrite("s1.png", img_s1_vis)
@@ -69,15 +69,15 @@ def main():
     cv2.imwrite("colorbar_aolp.png", img_colorbar_aolp)
 
     img_colorbar = (np.linspace(0, 1, w)[:, None] @ np.ones((1, h))).T
-    img_colorbar_dolp = pa.applyColorMapToDoP(img_colorbar)
+    img_colorbar_dolp = pa.applyColorToDoP(img_colorbar)
     cv2.imwrite("colorbar_dolp.png", img_colorbar_dolp)
 
     img_colorbar = (np.linspace(0, np.pi / 4, w)[:, None] @ np.ones((1, h))).T
-    img_colorbar_top = pa.applyColorMapToToP(img_colorbar)
+    img_colorbar_top = pa.applyColorToToP(img_colorbar)
     cv2.imwrite("colorbar_top.png", img_colorbar_top)
 
     img_colorbar = (np.linspace(-np.pi / 4, np.pi / 4, w)[:, None] @ np.ones((1, h))).T
-    img_colorbar_cop = pa.applyColorMapToCoP(img_colorbar)
+    img_colorbar_cop = pa.applyColorToCoP(img_colorbar)
     cv2.imwrite("colorbar_cop.png", img_colorbar_cop)
 
 
