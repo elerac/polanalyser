@@ -203,6 +203,9 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, borde
     grid : np.ndarray
         Grid image, its shape is  and dtype is same as input images
     """
+    if border < 0:
+        raise ValueError(f"The border width must be greater than or equal to 0: {border}")
+
     images = np.array(images)
     if images[0].ndim == 2:
         images = cv2.cvtColor(images, cv2.COLOR_GRAY2BGR)
