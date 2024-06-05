@@ -182,7 +182,7 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
     return ellipticity_angle_vis
 
 
-def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
     """Make a grid image from a list of images
 
     Parameters
@@ -194,7 +194,7 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, borde
     ncol : int
         Number of columns
     border : int, optional
-        Border width, by default 2
+        Border width, by default 0 (no border)
     border_color : npt.ArrayLike, optional
         Border color, by default black [0, 0, 0]
 
@@ -228,7 +228,7 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 2, borde
     return grid
 
 
-def makeGridMueller(img_mueller: np.ndarray, border: int = 2, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+def makeGridMueller(img_mueller: np.ndarray, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
     """Make a grid image from a Mueller matrix image
 
     Parameters
@@ -236,7 +236,7 @@ def makeGridMueller(img_mueller: np.ndarray, border: int = 2, border_color: npt.
     img_mueller : np.ndarray, (height, width, 3, 3, 3) or (height, width, 4, 4, 3) or (height, width, 3, 3) or (height, width, 4, 4)
         Mueller matrix image.
     border : int, optional
-        Border width, by default 2
+        Border width, by default 0 (no border)
     border_color : npt.ArrayLike, optional
         Border color, by default black [0, 0, 0]
 
