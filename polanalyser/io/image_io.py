@@ -124,7 +124,18 @@ def imwriteMultiple(filepath: PathLike, images: npt.ArrayLike, **props: dict[str
         Properties with shape (num_images, ...) for each key. Strutcture of arrays (SoA).
     """
     filepath = Path(filepath)
-    filepath.mkdir(parents=True, exist_ok=True)
+    if filepath.exists():
+        if filepath.is_file():
+            raise FileExistsError(f"'{filepath}' is a file, not a folder.")
+
+        # Delete entire folder and files
+        for child in filepath.iterdir():
+            if child.is_file():
+                child.unlink()
+            elif child.is_dir():
+                child.rmdir()
+    else:
+        filepath.mkdir(parents=True)
 
     num_images = len(images)
     dtype = images[0].dtype
