@@ -72,8 +72,8 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     # Construct the observation matrix
     W = np.empty((num, m_h * m_w))
     for i in range(num):
-        s_psg = np.expand_dims(mm_psg[i, 0, :], axis=1)  # [m00, m10, m20] or [m00, m10, m20, m30]
-        s_psa = np.expand_dims(mm_psa[i, :, 0], axis=0)  # [m00, m01, m02] or [m00, m01, m02, m03]
+        s_psg = mm_psg[i, :, 0][:, np.newaxis]  # [m00, m10, m20] or [m00, m10, m20, m30] (3, 1) or (4, 1)
+        s_psa = mm_psa[i, 0, :][np.newaxis, :]  # [m00, m01, m02] or [m00, m01, m02, m03] (1, 3) or (1, 4)
         W[i] = np.ravel((s_psg @ s_psa).T)
     W_pinv = np.linalg.pinv(W)
 
