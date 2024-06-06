@@ -200,7 +200,7 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
     return ellipticity_angle_vis
 
 
-def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+def makeGrid(images: npt.ArrayLike, nrow: int = 1, ncol: int = -1, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
     """Make a grid image from a list of images
 
     Parameters
@@ -208,9 +208,9 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 0, borde
     images : npt.ArrayLike
         List of images, its shape is (n, height, width, 3)
     nrow : int
-        Number of rows
+        Number of rows, by default 1
     ncol : int
-        Number of columns
+        Number of columns, by default -1 (auto)
     border : int, optional
         Border width, by default 0 (no border)
     border_color : npt.ArrayLike, optional
@@ -224,14 +224,30 @@ def makeGrid(images: npt.ArrayLike, nrow: int, ncol: int, border: int = 0, borde
     if border < 0:
         raise ValueError(f"The border width must be greater than or equal to 0: {border}")
 
+    # Convert grayscale to BGR if list of images
+    if isinstance(images, list):
+        for i in range(len(images)):
+            img = images[i]
+            if img.ndim == 2:
+                images[i] = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
     images = np.array(images)
-    if images[0].ndim == 2:
-        images = cv2.cvtColor(images, cv2.COLOR_GRAY2BGR)
+
+    if images.ndim == 3:  # (n, height, width)
+        images = np.tile(images[..., None], (1, 1, 1, 3))  # (n, height, width, 3)
+
     border_color = np.array(border_color, dtype=images.dtype)
 
     n = len(images)
-    if n != nrow * ncol:
-        raise ValueError(f"The number of images must be equal to 'nrow * ncol': {n} != {nrow} * {ncol}")
+
+    if ncol < 0:
+        ncol = np.ceil(n / nrow).astype(int)
+
+    if n < nrow * ncol:
+        shape = images[0].shape
+        img_dummy = np.full(shape, border_color, dtype=images.dtype)
+        images = np.concatenate([images, [img_dummy] * (nrow * ncol - n)])
+        n = nrow * ncol
 
     height, width = images[0].shape[:2]
     grid = np.full((height * nrow + border * (nrow + 1), width * ncol + border * (ncol + 1), 3), border_color, dtype=images.dtype)
