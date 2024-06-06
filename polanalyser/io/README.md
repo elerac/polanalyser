@@ -5,7 +5,7 @@ In general, polarization images require multiple images with some properties (i.
 The philosophy of Polanalyser is to store the images and properties in a human-readable format while easily accessible by the computer, maintaining the associated images and properties. To achieve this, Polanalyser is designed to store the images and properties in a single folder, where each image is in a standard image format (e.g., exr, png) and the properties are in a json file format. The structure of the folder is as follows:
 
 ```
-|-- data_name
+|-- mydata
 |   |-- image00000.exr
 |   |-- image00000.json
 |   |-- image00001.exr
@@ -65,18 +65,39 @@ The image files are named with a common prefix (e.g., `image`) and a number (e.g
 }
 ```
 
-To read and write the images and properties, Polanalyser offers `pa.imwriteMultiple` and `pa.imreadMultiple` functions. `pa.imreafdMultiple` reads the images and properties from a single folder and returns the images and properties as numpy arrays and a dictionary, respectively in Structure of Arrays (SoA) format. Here's an example of how to use these functions:
+To read and write the images and properties, Polanalyser offers `pa.imwriteMultiple` and `pa.imreadMultiple` functions. `pa.imreafdMultiple` reads the images and properties from a single folder and returns the images and properties as numpy arrays and a dictionary, respectively in Structure of Arrays (SoA) format. Both functions are run in parallel enabling fast read and write access. Here's an example of how to use these functions:
 
 ```python
 import polanalyser as pa
 
-images, props = pa.imreadMultiple('data_name')
+# Read images and properties
+images, props = pa.imreadMultiple("mydata")
 
-print(props.keys()) # dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle'])
+print(props.keys()) 
+# dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle'])
+print(images.shape) 
+# (16, 2048, 2048) 
+print(props["mueller_psa"].shape) 
+# (16, 3, 3)
+print(props["polarizer_angle"].shape) 
+# (16,)
 
-print(images.shape) # (16, 2048, 2048) 
-print(props['mueller_psa'].shape) # (16, 3, 3)
-print(props['polarizer_angle'].shape) # (16,)
+# Modify brightness and add new property
+brightness_list = []
+for i in range(len(images)):
+    brightness = i / len(images) 
+    images[i] = brightness * images[i]
+    brightness_list.append(brightness)
+props["brightness"] = brightness_list
 
-pa.imwriteMultiple('data_name_2', images * 2.0, props)
+# Write new images and properties
+pa.imwriteMultiple("mydata_2", images, props)
+
+# Read again
+images, props = pa.imreadMultiple("mydata")
+
+print(props.keys()) 
+# dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle', 'brightness'])
+print(props["brightness"])
+# [0.  0.0625  0.125  0.1875  0.25  0.3125  0.375  0.4375  0.5  0.5625  0.625  0.6875  0.75  0.8125  0.875  0.9375]
 ```
