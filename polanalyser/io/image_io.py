@@ -29,7 +29,7 @@ def imread(filename_img: PathLike) -> tuple[npt.NDArray[Any], dict[str, Any]]:
     return img, props
 
 
-def imreadMultiple(filepath: PathLike) -> tuple[npt.NDArray[Any], dict[str, npt.NDArray[Any]]]:
+def imreadMultiple(filepath: PathLike) -> tuple[npt.NDArray[Any], dict[str, npt.ArrayLike]]:
     """Read multiple images with properties in parallel
 
     The returned data structure is Structure of arrays (SoA).
