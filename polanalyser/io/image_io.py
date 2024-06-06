@@ -143,12 +143,13 @@ def imwriteMultiple(filepath: PathLike, images: npt.ArrayLike, **props: dict[str
     # Convert dtype to np.float32 if np.float64
     if dtype == np.float64:
         images = np.array(images, dtype=np.float32)
+        dtype = np.float32
 
     # Determine the extension
     if dtype == np.float32:
-        ext = ".exr"
+        ext = "exr"
     elif dtype == np.uint8 or dtype == np.uint16:
-        ext = ".png"
+        ext = "png"
     else:
         raise ValueError(f"Unsupported dtype: {dtype}")
 
