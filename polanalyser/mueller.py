@@ -16,9 +16,9 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     intensities : ArrayLike
         Intensities (N, *), where N is the number of intensities and * is the shape of the image (or tensor).
     mm_psg : ArrayLike
-        Mueller matrix of the Polarization State Generator (PSG). (N, 3, 3) or (N, 4, 4)
+        Mueller matrix of the Polarization State Generator (PSG) in (N, 3, 3) or (N, 4, 4). Stokes vector is also available in (N, 3) or (N, 4).
     mm_psa : ArrayLike
-        Mueller matrix of the Polarization State Analyzer (PSA). (N, 3, 3) or (N, 4, 4)
+        Mueller matrix of the Polarization State Analyzer (PSA) in (N, 3, 3) or (N, 4, 4). Stokes vector is also available in (N, 3) or (N, 4).
 
     Returns
     -------
@@ -51,20 +51,20 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     mm_psg = np.array(mm_psg)  # (N, 3, 3) or (N, 4, 4) or (N, 3) or (N, 4)
     num = len(intensities)
 
-    # In case of stokes vector, expand the axis of the number of elements
-    if mm_psg.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
-        mm_psg = np.expand_dims(mm_psg, axis=1)
-
-    if mm_psa.ndim == 2:  # (N, 3) or (N, 4) -> (N, 3, 1) or (N, 4, 1)
-        mm_psa = np.expand_dims(mm_psa, axis=2)
-
     # Check the number of the input elements
     if not (len(intensities) == len(mm_psa) == len(mm_psg)):
         raise ValueError(f"The number of elements must be same. {len(intensities)} != {len(mm_psa)} != {len(mm_psg)}")
 
     # Check the shape of the Mueller matrices
-    if not (mm_psg.ndim == 3 and mm_psg.ndim == 3):
-        raise ValueError(f"The shape of mueller matrices must be (N, 3, 3) or (N, 4, 4), not {mm_psg.shape}, {mm_psa.shape}")
+    if not (mm_psg.ndim in (2, 3) and mm_psa.ndim in (2, 3)):
+        raise ValueError(f"The shape of mueller matrices must be (N, 3, 3) or (N, 4, 4) or (N, 3) or (N, 4), not {mm_psg.shape} or {mm_psa.shape}")
+
+    # In case of stokes vector (N, 3) or (N, 4), expand the axis for later matrix manipulation
+    if mm_psg.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
+        mm_psg = mm_psg[:, np.newaxis, :]
+
+    if mm_psa.ndim == 2:  # (N, 3) or (N, 4) -> (N, 3, 1) or (N, 4, 1)
+        mm_psa = mm_psa[:, :, np.newaxis]
 
     m_h = mm_psg.shape[2]
     m_w = mm_psa.shape[1]
@@ -72,8 +72,8 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     # Construct the observation matrix
     W = np.empty((num, m_h * m_w))
     for i in range(num):
-        s_psg = mm_psg[i, :, 0][:, np.newaxis]  # [m00, m10, m20] or [m00, m10, m20, m30] (3, 1) or (4, 1)
-        s_psa = mm_psa[i, 0, :][np.newaxis, :]  # [m00, m01, m02] or [m00, m01, m02, m03] (1, 3) or (1, 4)
+        s_psg = mm_psg[i, :, 0][:, np.newaxis]  # [m00, m10, m20] or [m00, m10, m20, m30], (3, 1) or (4, 1)
+        s_psa = mm_psa[i, 0, :][np.newaxis, :]  # [m00, m01, m02] or [m00, m01, m02, m03], (1, 3) or (1, 4)
         W[i] = np.ravel((s_psg @ s_psa).T)
     W_pinv = np.linalg.pinv(W)
 
