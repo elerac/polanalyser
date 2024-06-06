@@ -168,7 +168,7 @@ def applyColorToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = N
         dop = np.ones_like(ellipticity_angle)
 
     top = applyColorMap(np.abs(ellipticity_angle), colormap, 0, np.pi / 4)
-    top = (top * dop[..., None]).astype(np.uint8)
+    top = np.clip(top * dop[..., None], 0, 255).astype(np.uint8)
 
     return top
 
@@ -195,7 +195,7 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
         docp = np.ones_like(ellipticity_angle)
 
     ellipticity_angle_vis = applyColorMap(ellipticity_angle, colormap, -np.pi / 4, np.pi / 4)
-    ellipticity_angle_vis = (ellipticity_angle_vis * docp[..., None]).astype(np.uint8)
+    ellipticity_angle_vis = np.clip(ellipticity_angle_vis * docp[..., None], 0, 255).astype(np.uint8)
 
     return ellipticity_angle_vis
 
