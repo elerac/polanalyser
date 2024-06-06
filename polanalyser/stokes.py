@@ -1,17 +1,18 @@
 from typing import List
 import numpy as np
+import numpy.typing as npt
 from .mueller import polarizer
 
 
-def calcStokes(intensity_list: List[np.ndarray], mueller_list: List[np.ndarray]) -> np.ndarray:
+def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
     """Calculate stokes parameters from measured intensities and mueller matrices
 
     Parameters
     ----------
-    intensity_list : List[np.ndarray]
-        List of intensity
-    mueller_list : List[np.ndarray]
-        List of mueller matrix
+    intensity_list : ArrayLike
+        Intensities (N, *)
+    mueller_list : ArrayLike
+        Mueller matrices (N, 3, 3) or (N, 4, 4), or Stokes vectors (N, 3) or (N, 4). If the shape is (N,), this function treats as the angles of linear polarizer.
 
     Returns
     -------
@@ -53,41 +54,43 @@ def calcStokes(intensity_list: List[np.ndarray], mueller_list: List[np.ndarray])
     True
     """
     # Convert ArrayLike object to np.ndarray
-    intensities = np.array(intensity_list)  # (len, *)
-    muellers = np.array(mueller_list)  # (len, *)
-
-    # Check the number of elements
-    len_intensities = len(intensities)
-    len_muellers = len(muellers)
-    if len_intensities != len_muellers:
-        raise ValueError(f"The number of elements must be same, not {len_intensities} != {len_muellers}.")
+    intensities = np.array(intensities)  # (N, *)
+    muellers = np.array(muellers)  # (N, *)
 
     # If the shape of `muellers` is a 1D array (each element is scalar), this function treats `muellers` as the angles of a linear polarizer.
     if muellers.ndim == 1:
         polarizer_angles = muellers
         return calcLinearStokes(intensities, polarizer_angles)
 
+    # Check the number of elements
+    if len(intensities) != len(muellers):
+        raise ValueError(f"The number of elements must be same, not {len(intensities)} != {len(muellers)}")
+
+    # In case of stokes vector (N, 3) or (N, 4), expand the axis for later matrix manipulation
+    if muellers.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
+        muellers = muellers[:, np.newaxis, :]
+
     # Move the axis of the number of elements to the last axis
-    intensities = np.moveaxis(intensities, 0, -1)  # (*, len)
-    muellers = np.moveaxis(muellers, 0, -1)  # (*, len)
+    intensities = np.moveaxis(intensities, 0, -1)  # (*, N)
+    muellers = np.moveaxis(muellers, 0, -1)  # (*, N, 3) or (*, N, 4)
 
     # Calculate
-    A = muellers[0].T  # [m11, m12, m13] (len, 3) or [m11, m12, m13, m14] (len, 4)
-    A_pinv = np.linalg.pinv(A)  # (3, len) or (len, 4)
+    A = muellers[0].T  # [m00, m01, m02] (N, 3) or [m01, m02, m03, m04] (N, 4)
+    A_pinv = np.linalg.pinv(A)  # (3, N) or (N, 4)
     stokes = np.tensordot(A_pinv, intensities, axes=(1, -1))  # (3, *) or (4, *)
     stokes = np.moveaxis(stokes, 0, -1)  # (*, 3) or (*, 4)
     return stokes
 
 
-def calcLinearStokes(intensities: List[np.ndarray], polarizer_angles: List[float]) -> np.ndarray:
+def calcLinearStokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike) -> np.ndarray:
     """Calculate only linear polarization stokes parameters from measured intensities and linear polarizer angle
 
     Parameters
     ----------
-    intensities : List[np.ndarray]
-        List of intensities (ors)
-    muellers : List[np.ndarray]
-        List of the angles of linear polarizer
+    intensities : ArrayLike
+        Intensities (N, *)
+    angles : ArrayLike
+        Polarizer angles (N,) in radian
 
     Returns
     -------
