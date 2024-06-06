@@ -10,18 +10,20 @@ import polanalyser as pa
 
 
 def main():
-    path = "dataset/mm3x3_example"
+    path = "dataset/toy_example_3x3_pc"
     print(f"Load images from '{path}'")
 
     images, props = pa.imreadMultiple(path)
     mm_psg = props["mueller_psg"]
     mm_psa = props["mueller_psa"]
 
-    print(mm_psa.shape, mm_psa.dtype)
+    print("Images:", images.shape, images.dtype)
+    print("Mueller PSG:", mm_psg.shape, mm_psg.dtype)
+    print("Mueller PSA:", mm_psa.shape, mm_psa.dtype)
 
     img_mueller = pa.calcMueller(images, mm_psg, mm_psa)
 
-    print(img_mueller.shape, img_mueller.dtype)  # (2048, 2448, 3, 3) float64
+    print("Mueller matrix image:", img_mueller.shape, img_mueller.dtype)  # (2048, 2448, 3, 3) float64
 
     # Normalized by a maximum value for visualization
     # Practical Tip: Use np.percentile() not to be affected by outliers.
