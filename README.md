@@ -11,11 +11,11 @@ Polanalyser is polarization image analysis tool.
 - [**Demosaicing for polarimetric image sensor**](#polarization-demosaicing)
   - Both Monochrome/Color Polarization image sensors (*e.g.*, IMX250MZR / MYR) are supported.
 - [**Analysis of Stokes vector**](#analysis-of-stokes-vector)
-  - Calculate Stokes vector from images captured with a polarization camera or custom setup.
+  - Obtain Stokes vector from images captured with a polarization camera or custom setup.
   - Convert Stokes vector to meaningful parameters, such as DoLP, AoLP.
 - [**Analysis of Mueller matrix**](#analysis-of-mueller-matrix)
   - Provide basic Mueller matrix elements, such as polarizer, retarder, and rotator.
-  - Calculate Mueller matrix from images captured under a variety of polarimetric conditions by using a least-squares method.
+  - Obtain Mueller matrix from images captured under a variety of polarimetric conditions by using a least-squares method.
 - [**Visualizing polarimetric images**](#visualizing-polarimetric-images)
   - Apply colormap to polarization images, such as DoLP, AoLP, ToP, and CoP.
   - Visualize the Mueller matrix image in grid form.
@@ -203,17 +203,17 @@ Before visualizing the Mueller matrix image, we need to normalize the Mueller ma
 # Normalize Mueller matrix image
 # img_mueller: (H, W, 3, 3)
 
-# Option1: Normalize by the maximum value
+# Option 1: Normalize by the maximum value
 # Pros: Show values linearly
 # Cons: The small values may not be visible
 img_mueller_maxnorm = img_mueller / np.abs(img_mueller).max()  
 
-# Option2: Gamma correction
+# Option 2: Gamma correction
 # Pros: Enhance the small values
 # Cons: The large values become saturated
 img_mueller_gamma = pa.gammaCorrection(img_mueller_maxnorm)  
 
-# Option3: m00 norm (scale by m00 value of each pixel)
+# Option 3: m00 norm (scale by m00 value of each pixel)
 # Pros: Enables to focus on the polarization properties
 # Cons: m00 becomes 1, and cannot represent the intensity difference
 img_mueller_m00norm = img_mueller / img_mueller[..., 0, 0][..., None, None]  
