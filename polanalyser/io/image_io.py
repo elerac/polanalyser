@@ -3,12 +3,21 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Union
 from pathlib import Path
+import re
 import numpy as np
 import numpy.typing as npt
 import cv2
 from .json_io import json_read, json_write
 
 PathLike = Union[str, os.PathLike]
+
+
+def _numerical_sort(value):
+    value = str(value)
+    numbers = re.compile(r"(\d+)")
+    parts = numbers.split(value)
+    parts[1::2] = map(int, parts[1::2])
+    return parts
 
 
 def imread(filename_img: PathLike) -> tuple[npt.NDArray[Any], dict[str, Any]]:
@@ -59,7 +68,7 @@ def imreadMultiple(filepath: PathLike) -> tuple[npt.NDArray[Any], dict[str, npt.
     ext_candidates = [".exr", ".png"]
     filenames_img = []
     for ext in ext_candidates:
-        filenames_img = sorted(filepath.glob(f"*{ext}"))
+        filenames_img = sorted(filepath.glob(f"*{ext}"), key=_numerical_sort)
         if len(filenames_img) > 0:
             break
     else:
