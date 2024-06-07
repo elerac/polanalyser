@@ -261,6 +261,19 @@ print(simplify(f))
 # 0.25*m00 + 0.25*m10*cos(10*theta)**2 + 0.125*m20*sin(20*theta) - 0.25*m30*sin(10*theta) + 0.25*(m01 + m11*cos(10*theta)**2 + m21*sin(20*theta)/2 - m31*sin(10*theta))*cos(2*theta)**2 + 0.25*(m02 + m12*cos(10*theta)**2 + m22*sin(20*theta)/2 - m32*sin(10*theta))*sin(2*theta)*cos(2*theta) + 0.25*(m03 + m13*cos(10*theta)**2 + m23*sin(20*theta)/2 - m33*sin(10*theta))*sin(2*theta)
 ```
 
+## Citation
+
+If you find Polanalyser useful, please consider citing as follows:
+
+```bibtex
+@software{maeda2019polanalyser,
+  author = {Ryota Maeda},
+  title = {Polanalyser: Polarization Image Analysis Tool},
+  url = {https://github.com/elerac/polanalyser},
+  year = {2019},
+}
+```
+
 ## Related Project
 
 If you like Polanalyser, you are also interested in the following paper.
