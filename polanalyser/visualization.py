@@ -224,6 +224,10 @@ def makeGrid(images: npt.ArrayLike, nrow: int = 1, ncol: int = -1, border: int =
     if border < 0:
         raise ValueError(f"The border width must be greater than or equal to 0: {border}")
 
+    # Convert tuple to list
+    if isinstance(images, tuple):
+        images = list(images)
+
     # Convert grayscale to BGR if list of images
     if isinstance(images, list):
         for i in range(len(images)):
