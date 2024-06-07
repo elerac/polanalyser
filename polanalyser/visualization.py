@@ -128,7 +128,7 @@ def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.
 
 
 def applyColorToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.NDArray[np.uint8]:
-    """Apply colormap to DoP, DoLP, and DoCP. The colormap is black to red.
+    """Apply colormap to DoP, DoLP, and DoCP.
 
     Parameters
     ----------
@@ -180,8 +180,8 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
     ----------
     ellipticity_angle : np.ndarray
         Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
-    dop : Optional[np.ndarray], optional
-        Degree of Polarization, its shape is (height, width), by default None
+    docp : Optional[np.ndarray], optional
+        Degree of Circular Polarization, its shape is (height, width), by default None
 
     Returns
     -------
