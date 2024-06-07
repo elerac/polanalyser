@@ -4,7 +4,7 @@ In many situations, a polarization image acquisition requires multiple images wi
 
 The philosophy of Polanalyser is to store the images and properties in a human-readable format while easily accessible by the computer, maintaining the associated images and properties. To achieve this, Polanalyser is designed to store the images and properties in a single folder, where each image is in a standard image format (e.g., exr, png) and the properties are in a json file format. The structure of the folder is as follows:
 
-```
+```shell
 |-- mydata
 |   |-- image00000.exr
 |   |-- image00000.json
@@ -99,7 +99,7 @@ props["brightness"] = brightness_list
 pa.imwriteMultiple("mydata_2", images, props)
 
 # Read again
-images, props = pa.imreadMultiple("mydata")
+images, props = pa.imreadMultiple("mydata_2")
 
 print(props.keys()) 
 # dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle', 'brightness'])
