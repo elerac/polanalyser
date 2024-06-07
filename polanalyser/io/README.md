@@ -67,7 +67,7 @@ The image files are named with a common prefix (e.g., `image`) and a number (e.g
 
 To read and write the images and properties, Polanalyser offers `pa.imwriteMultiple` and `pa.imreadMultiple` functions. 
 
-- `pa.imreafdMultiple` reads the images and properties from a single folder and returns the images and properties as NumPy arrays and a dictionary, respectively, in Structure of Arrays (SoA) format. The order of the images is sorted by the file name.  
+- `pa.imreadMultiple` reads the images and properties from a single folder and returns the images and properties as NumPy arrays and a dictionary, respectively, in Structure of Arrays (SoA) format. The order of the images is sorted by the file name.  
 - `pa.imwriteMultiple` writes the images and properties to a single folder. The numbering of the images and properties corresponds to the order of the input arrays.
 
 Both functions are run in parallel, enabling fast read and write access. Here's an example of how to use these functions:
