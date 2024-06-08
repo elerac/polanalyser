@@ -1,5 +1,6 @@
 from typing import Union, Optional
 import numpy as np
+import numpy.typing as npt
 import cv2
 import matplotlib
 
@@ -7,15 +8,36 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
-def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> np.ndarray:
+def gammaCorrection(x: np.ndarray, gamma: float = 1 / 2.2) -> np.ndarray:
+    """Gamma correction for both positive and negative values. This function is particularly useful in enhancing the small values of Stokes and Mueller.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Input array. Value range should be [-1.0, 1.0] (but not limited).
+    gamma : float, optional
+        Gamma value, by default 1 / 2.2
+
+    Returns
+    -------
+    x_gamma : np.ndarray
+        Gamma corrected array.
+    """
+    return (np.abs(x) ** gamma) * np.sign(x)
+
+
+def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> npt.NDArray[np.uint8]:
     """Apply a matplotlib colormap on a given array
 
     Parameters
     ----------
     x : np.ndarray
         Input array
-    colormap : Union[str, np.ndarray]
-        Colormap name to apply, see alos matplotlib official page https://matplotlib.org/stable/gallery/color/colormap_reference.html
+    colormap : Union[str, matplotlib.colors.Colormap, np.ndarray]
+        Colormap to apply.
+        In `str` type, you can specify the name of the colormap in matplotlib.
+        In `matplotlib.colors.Colormap` type, you can specify the colormap object from matplotlib or seaborn.
+        In `np.ndarray` type, you can specify the colormap array. The shape must be (256, 3) and dtype is `np.uint8`.
     vmin : float, optional
         The minimum value to normalize, by default 0.0
     vmax : float, optional
@@ -24,7 +46,7 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
     Returns
     -------
     x_color : np.ndarray
-        Colormapped source array. The last channel is applied color. dtype is `np.uint8`
+        Colormapped source array. The last channel is added for the color channel, and the dtype is `np.uint8`.
 
     Examples
     --------
@@ -33,13 +55,19 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
     >>> x = 2 * np.random.rand(256, 256) - 1  # [-1.0, 1.0]
     >>> x.shape
     (256, 256)
-    >>> x_colored = applyColorMap(x, "RdBu", vmin=-1.0, vmax=1.0)
+    >>> x_colored = pa.applyColorMap(x, "RdBu", vmin=-1.0, vmax=1.0)
     >>> x_colored.shape
     (256, 256, 3)
     >>> x_colored.dtype
     np.uint8
 
-    Colormap from user defined array
+    Colormap from seaborn
+
+    >>> import seaborn as sns
+    >>> husl = sns.color_palette("husl", as_cmap=True)
+    >>> x_colored = pa.applyColorMap(x, husl, vmin=0, vmax=3.14159265359)
+
+    Colormap from user defined ndarray
 
     >>> custom_colormap = np.zeros((256, 3), dtype=np.uint8)
     >>> custom_colormap[:128] = np.linspace(1, 0, 128)[..., None] * np.array([0, 0, 255])
@@ -58,7 +86,9 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
         lut = lut[:, :3]  # [0.0, 1.0], (256, 3), np.float64, RGB
         lut = lut[:, ::-1]  # [0.0, 1.0], (256, 3), np.float64, BGR
         lut_u8 = np.clip(255 * lut, 0, 255).astype(np.uint8)  # [0, 255], (256, 3), np.uint8, BGR
-    elif isinstance(colormap, np.ndarray) and colormap.shape == (256, 3) and colormap.dtype == np.uint8:
+    elif isinstance(colormap, np.ndarray):
+        if colormap.shape != (256, 3) or colormap.dtype != np.uint8:
+            raise ValueError(f"'colormap' in ndarray must be (256, 3) and dtype is `np.uint8`: {colormap.shape}, {colormap.dtype}")
         # from user defined array
         lut_u8 = colormap
     else:
@@ -69,7 +99,7 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, np.ndarray], vmin: float =
     return x_colored
 
 
-def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.0, value: Union[float, np.ndarray] = 1.0) -> np.ndarray:
+def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.0, value: Union[float, np.ndarray] = 1.0) -> npt.NDArray[np.uint8]:
     """Apply colormap to AoLP. The colormap is based on HSV.
 
     Parameters
@@ -95,6 +125,173 @@ def applyColorToAoLP(aolp: np.ndarray, saturation: Union[float, np.ndarray] = 1.
     hsv = cv2.merge([hue, saturation, value])
     aolp_colored = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     return aolp_colored
+
+
+def applyColorToDoP(dop: np.ndarray, c: npt.ArrayLike = [255, 255, 255]) -> npt.NDArray[np.uint8]:
+    """Apply colormap to DoP, DoLP, and DoCP.
+
+    Parameters
+    ----------
+    dop : np.ndarray
+        Degree of Polarization, its shape is (height, width). The range is from 0.0 to 1.0
+    c : npt.ArrayLike, optional
+        Color of high DoP, by default [255, 255, 255]. If you like black-red colormap, you can specify [0, 0, 255].
+
+    Returns
+    -------
+    dop_colored : np.ndarray
+        An applied colormap to DoP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    colormap = (np.linspace(0, 1, 256)[..., None] * np.array(c)).astype(np.uint8)
+    dop_colored = applyColorMap(dop, colormap, 0, 1)
+    return dop_colored
+
+
+def applyColorToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = None, c_l: npt.ArrayLike = [255, 255, 0], c_c: npt.ArrayLike = [0, 255, 255]) -> npt.NDArray[np.uint8]:
+    """Apply color to ToP (Type of Polarization)
+
+    Parameters
+    ----------
+    ellipticity_angle : np.ndarray
+        Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
+    dop : Optional[np.ndarray], optional
+        Degree of Polarization, its shape is (height, width), by default None
+
+    Returns
+    -------
+    top_colored : np.ndarray
+        An applied color to ToP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    colormap = (np.linspace(1, 0, 256)[..., None] * np.array(c_l) + np.linspace(0, 1, 256)[..., None] * np.array(c_c)).astype(np.uint8)
+
+    if dop is None:
+        dop = np.ones_like(ellipticity_angle)
+
+    top = applyColorMap(np.abs(ellipticity_angle), colormap, 0, np.pi / 4)
+    top = np.clip(top * dop[..., None], 0, 255).astype(np.uint8)
+
+    return top
+
+
+def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = None) -> npt.NDArray[np.uint8]:
+    """Apply color to CoP (Chirality of Polarization)
+
+    Parameters
+    ----------
+    ellipticity_angle : np.ndarray
+        Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
+    docp : Optional[np.ndarray], optional
+        Degree of Circular Polarization, its shape is (height, width), by default None
+
+    Returns
+    -------
+    cop_colored : np.ndarray
+        An applied color to CoP, its shape is (height, width, 3) and dtype is `np.uint8`
+    """
+    colormap = np.zeros((256, 3), dtype=np.uint8)
+    colormap[:128] = np.linspace(1, 0, 128)[..., None] * np.array([255, 0, 0])
+    colormap[128:] = np.linspace(0, 1, 128)[..., None] * np.array([0, 255, 255])
+    if docp is None:
+        docp = np.ones_like(ellipticity_angle)
+
+    ellipticity_angle_vis = applyColorMap(ellipticity_angle, colormap, -np.pi / 4, np.pi / 4)
+    ellipticity_angle_vis = np.clip(ellipticity_angle_vis * docp[..., None], 0, 255).astype(np.uint8)
+
+    return ellipticity_angle_vis
+
+
+def makeGrid(images: npt.ArrayLike, nrow: int = 1, ncol: int = -1, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+    """Make a grid image from a list of images
+
+    Parameters
+    ----------
+    images : npt.ArrayLike
+        List of images, its shape is (n, height, width, 3)
+    nrow : int
+        Number of rows, by default 1
+    ncol : int
+        Number of columns, by default -1 (auto)
+    border : int, optional
+        Border width, by default 0 (no border)
+    border_color : npt.ArrayLike, optional
+        Border color, by default black [0, 0, 0]
+
+    Returns
+    -------
+    grid : np.ndarray
+        Grid image, its shape is  and dtype is same as input images
+    """
+    if border < 0:
+        raise ValueError(f"The border width must be greater than or equal to 0: {border}")
+
+    # Convert tuple to list
+    if isinstance(images, tuple):
+        images = list(images)
+
+    # Convert grayscale to BGR if list of images
+    if isinstance(images, list):
+        for i in range(len(images)):
+            img = images[i]
+            if img.ndim == 2:
+                images[i] = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+    images = np.array(images)
+
+    if images.ndim == 3:  # (n, height, width)
+        images = np.tile(images[..., None], (1, 1, 1, 3))  # (n, height, width, 3)
+
+    border_color = np.array(border_color, dtype=images.dtype)
+
+    n = len(images)
+
+    if ncol < 0:
+        ncol = np.ceil(n / nrow).astype(int)
+
+    if n < nrow * ncol:
+        shape = images[0].shape
+        img_dummy = np.full(shape, border_color, dtype=images.dtype)
+        images = np.concatenate([images, [img_dummy] * (nrow * ncol - n)])
+        n = nrow * ncol
+
+    height, width = images[0].shape[:2]
+    grid = np.full((height * nrow + border * (nrow + 1), width * ncol + border * (ncol + 1), 3), border_color, dtype=images.dtype)
+
+    for i in range(n):
+        r = i // ncol
+        c = i % ncol
+        y = r * (height + border) + border
+        x = c * (width + border) + border
+        grid[y : y + height, x : x + width] = images[i]
+
+    return grid
+
+
+def makeGridMueller(img_mueller: np.ndarray, border: int = 0, border_color: npt.ArrayLike = [0, 0, 0]) -> np.ndarray:
+    """Make a grid image from a Mueller matrix image
+
+    Parameters
+    ----------
+    img_mueller : np.ndarray, (height, width, 3, 3, 3) or (height, width, 4, 4, 3) or (height, width, 3, 3) or (height, width, 4, 4)
+        Mueller matrix image.
+    border : int, optional
+        Border width, by default 0 (no border)
+    border_color : npt.ArrayLike, optional
+        Border color, by default black [0, 0, 0]
+
+    Returns
+    -------
+    img_mueller_grid : np.ndarray
+        Grid image of Mueller matrix, its shape is (height * nrow + border * (nrow + 1), width * ncol + border * (ncol + 1), 3) and dtype is same as input images
+    """
+    height, width, ncol, nrow = img_mueller.shape[:4]
+    if not (0 < ncol <= 4 and 0 < nrow <= 4):
+        raise ValueError(f"Mueller matrix must be smaller than 4x4: {ncol}x{nrow}")
+
+    img_mueller_flatten = np.reshape(img_mueller, (height, width, ncol * nrow, -1))
+    img_mueller_flatten = np.moveaxis(img_mueller_flatten, 2, 0)  # (ncol * nrow, height, width, -1)
+
+    img_mueller_grid = makeGrid(img_mueller_flatten, nrow, ncol, border, border_color)
+    return img_mueller_grid
 
 
 def plotMueller(filename: str, img_mueller: np.ndarray, vabsmax: Optional[float] = None, dpi: float = 300, cmap: str = "RdBu") -> None:

@@ -4,6 +4,7 @@ import re
 import json
 from collections.abc import Container
 from typing import List, Dict, Any, Optional, Union, SupportsIndex
+import warnings
 import numpy as np
 import cv2
 
@@ -102,6 +103,8 @@ class PolarizationContainer(Container):
     """
 
     def __init__(self, path: Optional[str] = None) -> None:
+        warnings.warn("This class will probably be removed in the future. Please use 'imreadMultiple' and 'imwriteMultiple' instead.", FutureWarning)
+
         self.data = list()  # List of dict
 
         if path is not None:
