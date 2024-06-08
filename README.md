@@ -41,11 +41,6 @@ Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is av
 
 [![](documents/dataset_overview.png)](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
-## Notations
-
-Please refer to the [notations.md](documents/notations.md) for the definition of the Stokes vector and Mueller matrix used in Polanalyser.
-
-
 ## Usage
 
 ### Polarization demosaicing
@@ -262,6 +257,11 @@ f = (M_PSA @ M @ M_PSG * I)[0, 0]
 print(simplify(f))  
 # 0.25*m00 + 0.25*m10*cos(10*theta)**2 + 0.125*m20*sin(20*theta) - 0.25*m30*sin(10*theta) + 0.25*(m01 + m11*cos(10*theta)**2 + m21*sin(20*theta)/2 - m31*sin(10*theta))*cos(2*theta)**2 + 0.25*(m02 + m12*cos(10*theta)**2 + m22*sin(20*theta)/2 - m32*sin(10*theta))*sin(2*theta)*cos(2*theta) + 0.25*(m03 + m13*cos(10*theta)**2 + m23*sin(20*theta)/2 - m33*sin(10*theta))*sin(2*theta)
 ```
+
+## Notations
+
+Please refer to the [notations.md](documents/notations.md) for the definition of the Stokes vector and Mueller matrix used in Polanalyser.
+
 
 ## Citation
 
