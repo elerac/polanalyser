@@ -60,6 +60,7 @@ import polanalyser as pa
 img_raw = cv2.imread("dataset/dragon.png", 0)
 
 img_000, img_045, img_090, img_135 = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
+# img_000, img_045, img_090, img_135 = pa.demosaicing(img_raw, pa.COLOR_PolarRGB)
 ```
 
 ### Analysis of Stokes vector
