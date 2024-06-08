@@ -45,7 +45,7 @@ Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is av
 
 ### Polarization demosaicing
 
-Demosaic  raw polarization image captured with a polarization sensor (*e.g.*, [IMX250MZR / MYR](https://www.sony-semicon.com/en/products/is/industry/polarization.html)).
+Demosaic raw polarization image captured with a polarization sensor (*e.g.*, [IMX250MZR / MYR](https://www.sony-semicon.com/en/products/is/industry/polarization.html)).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="documents/demosaicing_dark.png">
@@ -144,15 +144,14 @@ Measuring $f$ by changing many combinations of $`\mathbf{M}_\textrm{PSG}`$ and $
 The following code shows the example to estimate the 3x3 Mueller matrix image.
 
 ```python
-import cv2
 import polanalyser as pa
 
-# Read images and Mueller matrices of PSG and PSA
+# Read 16 images and Mueller matrices of PSG and PSA
 filepath = "dataset/toy_example_3x3_pc"
 images, props = pa.imreadMultiple(filepath)
+print(images.shape)  # (16, 2048, 2448)
 mm_psg = props["mueller_psg"] # (16, 3, 3)
 mm_psa = props["mueller_psa"] # (16, 3, 3)
-print(images.shape)  # (16, 2048, 2448)
 
 # Calculate Mueller matrix image
 img_mueller = pa.calcMueller(images, mm_psg, mm_psa)
@@ -166,7 +165,7 @@ print(img_mueller.shape)  # (2048, 2448, 3, 3)
 
 ### Stokes vector visualization
 
-Polanalyser provides functions to visualize Stokes vector images, such as AoLP, DoLP, ToP (Type of Polarization), and CoP (Chirality of Polarization). The color mapping is designed based on the relevant papers [[Wilkie and Weidlich, SCCG2010]](https://dl.acm.org/doi/10.1145/1925059.1925070), [[Baek+, SIGGRAPH2020]](http://vclab.kaist.ac.kr/siggraph2020/index.html), [[Jeon+, CVPR2024]](https://eschoi.com/SPDataset/). Note that this mapping may slightly differ from the original papers.
+Polanalyser provides functions to visualize Stokes vector images, such as AoLP, DoLP, ToP (Type of Polarization), and CoP (Chirality of Polarization). The color mapping is designed based on the relevant papers [[Wilkie and Weidlich, SCCG2010]](https://dl.acm.org/doi/10.1145/1925059.1925070), [[Baek+, SIGGRAPH2020]](http://vclab.kaist.ac.kr/siggraph2020/index.html), [[Jeon+, CVPR2024]](https://eschoi.com/SPDataset/). Note that this mapping is slightly different from the original papers.
 
 ```python
 # Example of visualization functions
@@ -193,7 +192,6 @@ In AoLP visualization, Polanalyser provides three types of AoLP visualization: A
 
 Polanalyser provides functions to apply a colormap and make a 3x3 or 4x4 grid to visualize the Mueller matrix image.
 
-
 Before visualizing the Mueller matrix image, we need to normalize the Mueller matrix. Here are three possible options, each with pros and cons. You need to choose the appropriate normalization method according to the purpose of the visualization and the chosen colormap.
 
 ```python
@@ -211,8 +209,8 @@ img_mueller_maxnorm = img_mueller / np.abs(img_mueller).max()
 img_mueller_gamma = pa.gammaCorrection(img_mueller_maxnorm)  
 
 # Option 3: m00 norm (scale by m00 value of each pixel)
-# Pros: Enables to focus on the polarization properties
-# Cons: m00 becomes 1, and cannot represent the intensity difference
+# Pros: Visualizes polarization components ratio independently of the intensity
+# Cons: m00 becomes 1, and cannot represent the absolute intensity
 img_mueller_m00norm = img_mueller / img_mueller[..., 0, 0][..., None, None]  
 ```
 
@@ -227,7 +225,6 @@ img_mueller_norm_vis_grid = pa.makeGridMueller(img_mueller_maxnorm_vis) # (H*3, 
 | Max norm | Max norm + Gamma | $m_{00}$ norm |
 |:--------------:|:--------------:|:--------------:|
 |![](documents/visualization/mueller_maxnorm_vis_grid.jpeg)|![](documents/visualization/mueller_gamma_vis_grid.jpeg)|![](documents/visualization/mueller_m00norm_vis_grid.jpeg)|
-
 
 ### Symbolic Stokes-Mueller computation
 
@@ -281,4 +278,3 @@ If you find Polanalyser useful, please consider citing as follows:
 If you like Polanalyser, you are also interested in the following paper.
 
 - Ryota Maeda, Shinsaku Hiura, **Polarimetric Light Transport Analysis for Specular Inter-reflection**,  IEEE Transactions on Computational Imaging, 2024. [[Project Page]](https://elerac.github.io/projects/PolarimetricInterreflection/)
-
