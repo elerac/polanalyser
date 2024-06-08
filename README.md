@@ -35,9 +35,11 @@ pip install polanalyser
 
 ## Polarization Image Dataset
 
-Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available.
+Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available. You can use these images to learn how to analyze polarization images.
 
 [**[Click here to download the dataset (Google Drive)]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+
+[![](documents/dataset_overview.png)](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
 ## Notations
 
