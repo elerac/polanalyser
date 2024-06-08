@@ -100,7 +100,7 @@ img_aolp = pa.cvtStokesToAoLP(img_stokes)
 
 ||Example of results | |
 |:-:|:-:|:-:|
-|Intensity ($s_0$)|DoLP|AoLP|
+|Intensity (s0)|DoLP|AoLP|
 |![](documents/dragon_IMX250MZR_intensity.jpg)|![](documents/dragon_IMX250MZR_DoLP.jpg)|![](documents/dragon_IMX250MZR_AoLP.jpg)|
 
 ### Analysis of Mueller matrix
@@ -180,7 +180,7 @@ Here is an example of visualizing the Stokes vector images. The stokes image is 
 
 |||||
 |:-:|:-:|:-:|:-:|
-| $s_0$ | $s_1$ | $s_2$ | $s_3$ |
+| s0 | s1 | s2 | s3 |
 |![](documents/visualization/color.jpeg)|![](documents/visualization/s1.jpeg)|![](documents/visualization/s2.jpeg)|![](documents/visualization/s3.jpeg)|
 | DoLP | AoLP | AoLP (light) | AoLP (dark) |
 |![](documents/visualization/dolp.jpeg)|![](documents/visualization/aolp.jpeg)|![](documents/visualization/aolp_light.jpeg)|![](documents/visualization/aolp_dark.jpeg)|
@@ -223,7 +223,7 @@ img_mueller_norm_vis = pa.applyColorMap(img_mueller_maxnorm, "RdBu", -1, 1)  # (
 img_mueller_norm_vis_grid = pa.makeGridMueller(img_mueller_maxnorm_vis) # (H*3, W*3, 3)
 ```
 
-| Max norm | Max norm + Gamma | $m_{00}$ norm |
+| Max norm | Max norm + Gamma | m00 norm |
 |:--------------:|:--------------:|:--------------:|
 |![](documents/visualization/mueller_maxnorm_vis_grid.jpeg)|![](documents/visualization/mueller_gamma_vis_grid.jpeg)|![](documents/visualization/mueller_m00norm_vis_grid.jpeg)|
 
