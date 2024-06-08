@@ -133,7 +133,7 @@ print(M_QWP)
 #  [ 0.  0. -1.  0.]]
 ```
 
-We can measure the unknown Mueller matrix by changing the polarization state of both the light and the detector (a.k.a. ellipsometry). The following figure shows a schematic diagram to measure the unknown Mueller matrix $\mathbf{M}$
+We can measure the unknown Mueller matrix by changing the polarization state of both the light and the detector (a.k.a. ellipsometry). The following figure shows a schematic diagram to measure the unknown Mueller matrix $`\mathbf{M}`$
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="documents/mueller_setup_dark.png">
@@ -141,10 +141,10 @@ We can measure the unknown Mueller matrix by changing the polarization state of 
   <img alt="Mueller setup" src="documents/mueller_setup_light.png">
 </picture>
 
-$I$ denotes the intensity of the unpolarized light source. $\mathbf{M}_\textrm{PSG}$ and $\mathbf{M}_\textrm{PSA}$ represent the Polarization state generator and analyzer (PSG and PSA) in Mueller matrix form. PSG and PSA are commonly composed of the basic optical elements (i.e., linear polarizer and retarder).
-The detector measures the intensity $f$ expressed by $f = [ \mathbf{M}_\textrm{PSA} \mathbf{M} \mathbf{M}_\textrm{PSG} I]_{00}$. $[...]_{00}$ extracts the (0, 0) component of the matrix.
+$I$ denotes the intensity of the unpolarized light source. $`\mathbf{M}_\textrm{PSG}`$ and $`\mathbf{M}_\textrm{PSA}`$ represent the Polarization state generator and analyzer (PSG and PSA) in Mueller matrix form. PSG and PSA are commonly composed of the basic optical elements (i.e., linear polarizer and retarder).
+The detector measures the intensity $f$ expressed by $`f = [ \mathbf{M}_\textrm{PSA} \mathbf{M} \mathbf{M}_\textrm{PSG} I]_{00}`$. $[...]_{00}$ extracts the (0, 0) component of the matrix.
 
-Measuring $f$ by changing many combinations of $\mathbf{M}_\textrm{PSG}$ and $\mathbf{M}_\textrm{PSA}$ can estimate the unknown Mueller matrix $\mathbf{M}$ with a linear least-squares method.
+Measuring $f$ by changing many combinations of $`\mathbf{M}_\textrm{PSG}`$ and $`\mathbf{M}_\textrm{PSA}`$ can estimate the unknown Mueller matrix $`\mathbf{M}`$ with a linear least-squares method.
 
 The following code shows the example to estimate the 3x3 Mueller matrix image.
 
