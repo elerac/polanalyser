@@ -198,3 +198,29 @@ def hwp(theta: float) -> np.ndarray:
         Mueller matrix (4, 4)
     """
     return retarder(np.pi, theta)
+
+
+def depolarizer(v: npt.ArrayLike) -> np.ndarray:
+    """Generate Mueller matrix of the depolarizer
+
+    Parameters
+    ----------
+    v : npt.ArrayLike
+        Depolarization factor, Scalar or (3,), -1 <= v <= 1. If v is scalar, it is expanded to (v, v, v).
+
+    Returns
+    -------
+    np.ndarray
+        Mueller matrix, (4, 4)
+    """
+    v = np.asarray(v)
+
+    if not (np.abs(v) <= 1.0).all():
+        raise ValueError(f"Invalid value: {v}. Expected -1 <= v <= 1.")
+
+    if v.shape == ():  # Scalar
+        return np.diag([1, v.item(), v.item(), v.item()])
+    elif v.shape == (3,):  # Vector3
+        return np.diag([1, *v])
+    else:
+        raise ValueError(f"Invalid shape: {v.shape}. Expected () or (3,).")
