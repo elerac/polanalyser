@@ -242,3 +242,60 @@ def depolarizer(v: npt.ArrayLike = 0.0) -> np.ndarray:
         return np.diag([1, *v])
     else:
         raise ValueError(f"Invalid shape: {v.shape}. Expected () or (3,).")
+
+
+def diattenuator(d: npt.ArrayLike, t: float = 1.0) -> np.ndarray:
+    """Generate Mueller matrix of the diattenuator
+
+    Parameters
+    ----------
+    d : npt.ArrayLike
+        Diattenuation vector, (3,)
+    t : float, optional
+        Transmittance for an unpolarized light, by default 1.0
+
+    Returns
+    -------
+    np.ndarray
+        Mueller matrix, (4, 4)
+
+    Examples
+    --------
+    Linear polarizer
+
+    >>> 0.5 * pa.diattenuator([1, 0, 0])  # Horizontal linear polarizer (theta = 0)
+    [[0.5 0.5 0.  0. ]
+     [0.5 0.5 0.  0. ]
+     [0.  0.  0.  0. ]
+     [0.  0.  0.  0. ]]
+
+    >>> theta = np.deg2rad(30)  # Linear polarizer at 30 degrees
+    >>> M1 = 0.5 * pa.diattenuator([np.cos(2 * theta), np.sin(2 * theta), 0])
+    >>> M2 = pa.polarizer(theta))
+    >>> np.allclose(M1, M2)
+    True
+
+    Circular polarizer
+
+    >>> 0.5 * pa.diattenuator([0, 0, 1])  # Right-handed circular polarizer
+    [[0.5 0.  0.  0.5]
+     [0.  0.  0.  0. ]
+     [0.  0.  0.  0. ]
+     [0.5 0.  0.  0.5]]
+
+    >>> 0.5 * pa.diattenuator([0, 0, -1])  # Left-handed circular polarizer
+    [[ 0.5  0.   0.  -0.5]
+     [ 0.   0.   0.   0. ]
+     [ 0.   0.   0.   0. ]
+     [-0.5  0.   0.   0.5]]
+    """
+    d = np.asarray(d)
+    norm = np.linalg.norm(d)
+    d_normalized = d / norm
+    m_D = np.sqrt(1 - norm**2) * np.eye(3) + (1 - np.sqrt(1 - norm**2)) * np.outer(d_normalized, d_normalized)
+    M_D = np.empty((4, 4))
+    M_D[0, 0] = 1
+    M_D[0, 1:] = d
+    M_D[1:, 0] = d
+    M_D[1:, 1:] = m_D
+    return t * M_D
