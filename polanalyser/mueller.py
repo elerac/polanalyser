@@ -212,6 +212,24 @@ def depolarizer(v: npt.ArrayLike = 0.0) -> np.ndarray:
     -------
     np.ndarray
         Mueller matrix, (4, 4)
+
+    Examples
+    --------
+    >>> pa.depolarizer()  # Ideal depolarizer
+    [[1. 0. 0. 0.]
+     [0. 0. 0. 0.]
+     [0. 0. 0. 0.]
+     [0. 0. 0. 0.]]
+    >>> pa.depolarizer(0.5)
+    [[1.  0.  0.  0. ]
+     [0.  0.5 0.  0. ]
+     [0.  0.  0.5 0. ]
+     [0.  0.  0.  0.5]]
+    >>> pa.depolarizer([0.9, 0.8, 0.7])
+    [[1.  0.  0.  0. ]
+     [0.  0.9 0.  0. ]
+     [0.  0.  0.8 0. ]
+     [0.  0.  0.  0.7]]
     """
     v = np.asarray(v)
 
