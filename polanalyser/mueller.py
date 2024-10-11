@@ -200,12 +200,12 @@ def hwp(theta: float) -> np.ndarray:
     return retarder(np.pi, theta)
 
 
-def depolarizer(v: npt.ArrayLike) -> np.ndarray:
+def depolarizer(v: npt.ArrayLike = 0.0) -> np.ndarray:
     """Generate Mueller matrix of the depolarizer
 
     Parameters
     ----------
-    v : npt.ArrayLike
+    v : npt.ArrayLike, optional
         Depolarization factor, Scalar or (3,), -1 <= v <= 1. If v is scalar, it is expanded to (v, v, v).
 
     Returns
