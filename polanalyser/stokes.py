@@ -339,11 +339,11 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
 
     Examples
     --------
-    >>> isstokes([1.0, 0.0, 0.0, 0.0])
+    >>> pa.isstokes([1.0, 0.0, 0.0, 0.0])
     True
-    >>> isstokes([1.0, 1.0, 0.0, 0.0])
+    >>> pa.isstokes([1.0, 1.0, 0.0, 0.0])
     True
-    >>> isstokes([1.0, 1.01, 0.0, 0.0])
+    >>> pa.isstokes([1.0, 1.01, 0.0, 0.0])
     False
     """
     stokes = np.asarray(stokes)
