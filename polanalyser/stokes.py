@@ -318,3 +318,48 @@ def cvtStokesToDoCP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
     s0 = stokes[..., 0]
     s3 = stokes[..., 3]
     return np.abs(s3) / s0
+
+
+def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.ndarray:
+    """Check if the Stokes vector is physically valid.
+
+    Parameters
+    ----------
+    stokes : (..., 4) array_like
+        Stokes vector.
+    atol : float, optional
+        Absolute tolerance, by default 1.0e-8.
+    axis : int, optional
+        The axis that contains the Stokes vectors, by default -1.
+
+    Returns
+    -------
+    is_valid : (..., ) array
+        This is scalar if the input is a single Stokes vector, and an array of booleans if the input is a stack of Stokes vectors.
+
+    Examples
+    --------
+    >>> isstokes([1.0, 0.0, 0.0, 0.0])
+    True
+    >>> isstokes([1.0, 1.0, 0.0, 0.0])
+    True
+    >>> isstokes([1.0, 1.01, 0.0, 0.0])
+    False
+    """
+    stokes = np.asarray(stokes)
+    stokes = _movelastaxis(stokes, axis)
+    s0 = stokes[..., 0]
+    s1 = stokes[..., 1]
+    s2 = stokes[..., 2]
+    s3 = stokes[..., 3]
+
+    # The intensity should be non-negative
+    # s0 >= 0
+    is_valid_intensity = s0 >= 0
+
+    # The DoP should be smaller than 1
+    # (s0**2 - (s1**2 + s2**2 + s3**2)) >= 0
+    # but allow a small negative value due to numerical errors
+    is_valid_dop = (s0**2 - (s1**2 + s2**2 + s3**2)) > -abs(atol)
+
+    return np.bitwise_and(is_valid_intensity, is_valid_dop)
