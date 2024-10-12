@@ -8,3 +8,4 @@ from .demosaicing import *
 from .visualization import *
 from .container import PolarizationContainer
 from .io import *
+from . import random
