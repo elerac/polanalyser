@@ -13,7 +13,8 @@ def _stokes(rng, s0=1.0, dop=None, aolp=None, ellipticity_angle=None, size=None)
         aolp = rng.uniform(0, np.pi, size)
 
     if ellipticity_angle is None:
-        ellipticity_angle = rng.uniform(-np.pi / 4, np.pi / 4, size)
+        # Apply arcsin to make the distribution uniform
+        ellipticity_angle = 0.5 * np.arcsin(1 - 2 * rng.uniform(0, 1, size))
 
     # Check input values
     if np.any(np.logical_or(dop < 0, 1 < dop)):
