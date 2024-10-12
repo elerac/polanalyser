@@ -86,6 +86,60 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     return mueller
 
 
+def retardance_vector(M_R: np.ndarray) -> np.ndarray:
+    """Extract retardance vector from retardance Mueller matrix.
+
+    The equations are based on the paper by Lu and Chipman [1]_.
+
+    Parameters
+    ----------
+    M_R : array (..., 4, 4)
+        Retardance Mueller matrix. If the matrix is not a retardance matrix, the result would be incorrect.
+
+    Returns
+    -------
+    R_vec: array (..., 3)
+        Retardance vector (..., 3)
+
+    References
+    ----------
+    .. [1] Shih-Yau Lu and Russell A Chipman. Interpretation of Mueller matrices based on polar decomposition. Journal of the Optical Society of America A (JOSA A) 13, 5 (1996), 1106-1113.
+
+    Examples
+    --------
+    Extract retardance vector from retardance Mueller matrix.
+
+    >>> delta = np.deg2rad(20)
+    >>> theta = np.deg2rad(30)
+    >>> M_R = pa.retarder(delta, theta)  # (4, 4)
+    >>> retardance_vec = pa.retardance_vector(M_R) # (3,)
+
+    Convert retardance vector to delta and theta.
+
+    >>> delta_ = np.linalg.norm(retardance_vec, axis=-1)
+    >>> theta_ = np.arctan2(retardance_vec[1], retardance_vec[0]) / 2
+    >>> np.allclose(delta, delta_)
+    True
+    >>> np.allclose(theta, theta_)
+    True
+    """
+    if M_R.shape[-2:] != (4, 4):
+        raise ValueError(f"Invalid shape: {M_R.shape}. Expected (..., 4, 4).")
+
+    R = np.arccos(np.trace(M_R, axis1=-2, axis2=-1) / 2 - 1)  # Eq. (17)
+    levi_civita_ijk = np.array(
+        [
+            [[0, 0, 0], [0, 0, 1], [0, -1, 0]],
+            [[0, 0, -1], [0, 0, 0], [1, 0, 0]],
+            [[0, 1, 0], [-1, 0, 0], [0, 0, 0]],
+        ]
+    )
+    m_R = M_R[..., 1:, 1:]  # Eq. (14)
+    R_hat = 1 / (2 * np.sin(R[..., None])) * np.sum(levi_civita_ijk * m_R[..., None, :, :], axis=(-2, -1))  # Eq. (17)
+    R_vec = R[..., None] * R_hat  # Eq. (8)
+    return R_vec
+
+
 def rotator(theta: float) -> np.ndarray:
     """Generate Mueller matrix of rotation
 
