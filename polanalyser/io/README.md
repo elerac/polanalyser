@@ -1,59 +1,54 @@
-# Polarization Image I/O in Polanalyser (experimental)
+# Data I/O in Polanalyser (experimental)
 
-In many situations, a polarization image acquisition requires multiple images with some properties (i.e., polarizer angle, Mueller matrix). For example, to acquire a stokes image, we need to capture several images with different polarizer angles. Therefore, we have to implement an image input/output mechanism to manage multiple images and their associated properties. A straightforward approach is to convert these images and properties into a single file format like HDF5 or npy. However, these formats do not allow the images to be viewed in standard image viewers and require additional software to check the images and properties.
+Polarization imaging often involves capturing multiple images with associated properties, such as polarizer angles or Mueller matrices. For example, acquiring Stokes parameters requires capturing several images at different polarizer rotation angles. A straightforward approach is to store the images and their associated metadata in a single file format, such as HDF5 or NPZ. While these formats offer flexibility in storing these images and metadata, they are incompatible with standard image viewers and require specialized software to access the data. This limitation hinders efficient debugging and verification of data during acquisition and processing. To overcome these challenges, Polanalyser introduces a data format that integrates images with their metadata in a human-readable and machine-parsable structure. Additionally, Polanalyser provides I/O functions enable efficient parallelized saving and loading of data.
 
-The philosophy of Polanalyser is to store the images and properties in a human-readable format while easily accessible by the computer, maintaining the associated images and properties. To achieve this, Polanalyser is designed to store the images and properties in a single folder, where each image is in a standard image format (e.g., exr, png) and the properties are in a json file format. The structure of the folder is as follows:
+## Data Format
+
+### Folder Structure
+
+Polanalyser organizes data within a single folder to ensure simplicity and accessibility. Each image is stored in a standard image format (PNG, EXR) or a numpy array format (NPY), while its associated metadata is saved in a corresponding JSON file. The image file and its metadata file share the same stem name, ensuring easy pairing. The folder structure is as follows:
 
 ```shell
 |-- mydata
-|   |-- image00000.exr
-|   |-- image00000.json
-|   |-- image00001.exr
-|   |-- image00001.json
+|   |-- 00.png
+|   |-- 00.json
+|   |-- 01.png
+|   |-- 01.json
 |   |-- ...
-|   |-- image00015.exr
-|   |-- image00015.json
+|   |-- 15.png
+|   |-- 15.json
 ```
 
-The image files are named with a common prefix (e.g., `image`) and a number (e.g., `00000`). The properties are stored in a json file with the same name as the image file. The json file contains the properties in the dictionary format such as:
+### JSON File
+
+The JSON file contains the properties of the image in a structured format. The properties are stored as a dictionary, where the keys represent the property names and the values are the property values. Below is an example of a JSON file containing the angles and Mueller matrix of an analyzer:
 
 ```json
 {
-    "mueller_psa": {
+    "angles": 1.2566370614359172,
+    "mm_psa": {
         "type": "ndarray",
         "values": [
             [
                 0.5,
-                0.5,
+                -0.40450849718747367,
+                0.2938926261462366,
                 0.0
             ],
             [
-                0.5,
-                0.5,
+                -0.40450849718747367,
+                0.3272542485937368,
+                -0.2377641290737884,
+                0.0
+            ],
+            [
+                0.2938926261462366,
+                -0.2377641290737884,
+                0.17274575140626322,
                 0.0
             ],
             [
                 0.0,
-                0.0,
-                0.0
-            ]
-        ],
-        "dtype": "<f8"
-    },
-    "mueller_psg": {
-        "type": "ndarray",
-        "values": [
-            [
-                0.5,
-                0.5,
-                0.0
-            ],
-            [
-                0.5,
-                0.5,
-                0.0
-            ],
-            [
                 0.0,
                 0.0,
                 0.0
@@ -61,48 +56,51 @@ The image files are named with a common prefix (e.g., `image`) and a number (e.g
         ],
         "dtype": "<f8"
     }
-    "polarizer_angle": 0.0
 }
 ```
 
-To read and write the images and properties, Polanalyser offers `pa.imwriteMultiple` and `pa.imreadMultiple` functions. 
+## I/O Functions
 
-- `pa.imreadMultiple` reads the images and properties from a single folder and returns the images and properties as NumPy arrays and a dictionary, respectively, in Structure of Arrays (SoA) format. The order of the images is sorted by the file name.  
-- `pa.imwriteMultiple` writes the images and properties to a single folder. The numbering of the images and properties corresponds to the order of the input arrays.
+Polanalyser provides the `pa.save` and `pa.load` functions for saving and loading images and their properties. Both functions are parallelized for multiple image saving and loading for efficient processing.
 
-Both functions are run in parallel, enabling fast read and write access. Here's an example of how to use these functions:
+### `pa.save(filepath, arrays, **kwargs)`
+
+This function writes images and their properties to a specified folder. The numbering of images and properties corresponds to the order of the input list. The file format is determined by the shape and data type of the input arrays.
+
+#### Parameters
+
+- `filepath` (PathLike): The path to the folder where the images and properties are saved.
+- `arrays` (List[np.ndarray]): A list of images to be saved.
+- `**kwargs`: Properties to be saved. Lists of values (e.g., int, float, np.ndarray).
+
+
+### `pa.load(filepath)`
+
+This function reads images and their properties from a specified folder.
+
+#### Parameters
+
+- `filepath` (PathLike): The path to the folder where the images and properties are saved.
+
+#### Returns
+
+- `images` (List[np.ndarray]): A list of images loaded from the folder.
+- `props` (Dict[str, List[Any]]): A dictionary of properties loaded from the folder.
+
+### Example Usage
 
 ```python
+import numpy as np
 import polanalyser as pa
 
-# Read images and properties
-images, props = pa.imreadMultiple("mydata")
+# Save images and properties 
+images = [np.random.uniform(0, 255, (400, 600, 3)).astype(np.uint8) for _ in range(16)]
+angles = np.linspace(0, np.pi, 16)
+mm_psa = [pa.polarizer(ang) for ang in angles]
+pa.save("mydata", images, angles=angles, mm_psa=mm_psa)
 
-print(props.keys()) 
-# dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle'])
-print(images.shape) 
-# (16, 2048, 2048) 
-print(props["mueller_psa"].shape) 
-# (16, 3, 3)
-print(props["polarizer_angle"].shape) 
-# (16,)
-
-# Modify brightness and add new property
-brightness_list = []
-for i in range(len(images)):
-    brightness = i / len(images) 
-    images[i] = brightness * images[i]
-    brightness_list.append(brightness)
-props["brightness"] = brightness_list
-
-# Write new images and properties
-pa.imwriteMultiple("mydata_2", images, props)
-
-# Read again
-images, props = pa.imreadMultiple("mydata_2")
-
-print(props.keys()) 
-# dict_keys(['mueller_psa', 'mueller_psg', 'polarizer_angle', 'brightness'])
-print(props["brightness"])
-# [0.  0.0625  0.125  0.1875  0.25  0.3125  0.375  0.4375  0.5  0.5625  0.625  0.6875  0.75  0.8125  0.875  0.9375]
+# Load images and properties
+images, props = pa.load("mydata") # List of images, dictionary of properties
+angles = props["angles"] # List of float
+mm_psa = props["mm_psa"] # List of 2D arrays
 ```
