@@ -9,3 +9,4 @@ from .visualization import *
 from .container import PolarizationContainer
 from .io import *
 from . import random
+from .spectrum import spectrum_to_color
