@@ -505,6 +505,9 @@ def spectrum_to_color(values: np.ndarray, wvls: np.ndarray) -> np.ndarray:
     for i in range(3):
         interpolated_xyz[:, i] = np.interp(wvls, ref_wvls, ref_xyz[:, i])
 
+    # Normalize the interpolated data
+    interpolated_xyz /= np.sum(interpolated_xyz, axis=-1, keepdims=True)
+
     # Spectrum to XYZ
     xyz = np.dot(values, interpolated_xyz)
 
