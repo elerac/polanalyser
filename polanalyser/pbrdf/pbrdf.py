@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Union, Tuple
 import numpy as np
-from polanalyser.pbrdf.io import load_pbsdf
+from .io import load_pbsdf
 
 
 class PolarimetricBRDF(ABC):
