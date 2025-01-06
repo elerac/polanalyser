@@ -26,7 +26,7 @@ The JSON file contains the properties of the image in a structured format. The p
 ```json
 {
     "angles": 1.2566370614359172,
-    "mm_psa": {
+    "mm": {
         "type": "ndarray",
         "values": [
             [
@@ -73,7 +73,6 @@ This function writes images and their properties to a specified folder. The numb
 - `arrays` (List[np.ndarray]): A list of images to be saved.
 - `**kwargs`: Properties to be saved. Lists of values (e.g., int, float, np.ndarray).
 
-
 ### `pa.load(filepath)`
 
 This function reads images and their properties from a specified folder.
@@ -84,7 +83,7 @@ This function reads images and their properties from a specified folder.
 
 #### Returns
 
-- `images` (List[np.ndarray]): A list of images loaded from the folder.
+- `images` (Union[np.ndarray, List[np.ndarray]]): A list of images loaded from the folder.
 - `props` (Dict[str, List[Any]]): A dictionary of properties loaded from the folder.
 
 ### Example Usage
@@ -96,11 +95,11 @@ import polanalyser as pa
 # Save images and properties 
 images = [np.random.uniform(0, 255, (400, 600, 3)).astype(np.uint8) for _ in range(16)]
 angles = np.linspace(0, np.pi, 16)
-mm_psa = [pa.polarizer(ang) for ang in angles]
-pa.save("mydata", images, angles=angles, mm_psa=mm_psa)
+mm = [pa.polarizer(ang) for ang in angles]
+pa.save("mydata", images, angles=angles, mm=mm)
 
 # Load images and properties
 images, props = pa.load("mydata") # List of images, dictionary of properties
 angles = props["angles"] # List of float
-mm_psa = props["mm_psa"] # List of 2D arrays
+mm = props["mm"] # List of 2D arrays
 ```
