@@ -3,10 +3,15 @@ from pathlib import Path
 import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Union, Dict, Tuple, List, Optional
+import warnings
 import numpy as np
 import cv2
 
 PathLike = Union[str, Path]
+
+
+class PolanalyserWarning(UserWarning):
+    pass
 
 
 class NdarrayEncoder(json.JSONEncoder):
@@ -17,7 +22,7 @@ class NdarrayEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, o)
 
 
-def ndarray_hook(o):
+def _ndarray_hook(o):
     if "type" in o:
         if o["type"] == "ndarray":
             dtype = o["dtype"] if "dtype" in o else None
@@ -27,10 +32,10 @@ def ndarray_hook(o):
 
 class NdarrayDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(self, object_hook=ndarray_hook, *args, **kwargs)
+        json.JSONDecoder.__init__(self, object_hook=_ndarray_hook, *args, **kwargs)
 
 
-def save_json(filename_json: PathLike, data: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+def _save_json(filename_json: PathLike, data: Optional[Dict[str, Any]] = None, **kwargs) -> None:
     """Save dictionary to a json file."""
     filename_json = Path(filename_json)
 
@@ -51,7 +56,7 @@ def save_json(filename_json: PathLike, data: Optional[Dict[str, Any]] = None, **
         json.dump(data, f, cls=NdarrayEncoder, indent=4)
 
 
-def load_json(filename_json: PathLike) -> Dict[str, Any]:
+def _load_json(filename_json: PathLike) -> Dict[str, Any]:
     """Load dictionary from a json file."""
     filename_json = Path(filename_json)
     with open(filename_json, "r") as f:
@@ -59,7 +64,7 @@ def load_json(filename_json: PathLike) -> Dict[str, Any]:
     return data
 
 
-def save_array(name: PathLike, array: np.ndarray) -> Path:
+def _save_array(name: PathLike, array: np.ndarray) -> Path:
     """Save array to a file in uncompressed format.
 
     The file format is determined by the array shape and dtype.
@@ -108,7 +113,7 @@ def save_array(name: PathLike, array: np.ndarray) -> Path:
         return filename
 
 
-def load_array(filename: PathLike) -> np.ndarray:
+def _load_array(filename: PathLike) -> np.ndarray:
     """Load array from a file.
 
     It supports image files (e.g., png, exr) and npy files.
@@ -137,28 +142,38 @@ def _numerical_sort(value):
     return parts
 
 
-def _get_filenames(filepath: PathLike) -> Tuple[List[Path], List[Path]]:
+def _glob_filenames(dirpath: PathLike) -> Tuple[List[Path], List[Path]]:
     """Get filenames of arrays (.png, .exr, .npy) and properties (.json) in a folder."""
-    filepath = Path(filepath)
+    dirpath = Path(dirpath)
+    if not dirpath.is_dir():
+        raise FileNotFoundError(f"'{dirpath}' is not a existing folder.")
     suffix_candidates = [".png", ".exr", ".npy"]
-    filenames_array = [child for child in filepath.iterdir() if child.suffix in suffix_candidates]
+    filenames_array = [child for child in dirpath.iterdir() if child.suffix in suffix_candidates]
     filenames_array = sorted(filenames_array, key=_numerical_sort)
     filenames_json = [filename_array.with_suffix(".json") for filename_array in filenames_array]
     return filenames_array, filenames_json
 
 
-def save(filepath: PathLike, arrays: Union[np.ndarray, List[np.ndarray]], **kwargs):
-    """Save multiple arrays with properties."""
-    filepath = Path(filepath)
+def save(dirpath: PathLike, arrays: Union[np.ndarray, List[np.ndarray]], **kwargs) -> None:
+    """Save multiple arrays with properties.
+
+    Parameters
+    ----------
+    dirpath : PathLike
+        The folder path to save arrays and properties.
+    arrays : Union[np.ndarray, List[np.ndarray]]
+        The list of arrays to save.
+    """
+    dirpath = Path(dirpath)
 
     # Create the folder if it does not exist
-    if not filepath.exists():
-        filepath.mkdir(parents=True)
+    if not dirpath.exists():
+        dirpath.mkdir(parents=True)
 
-    # Delete the all files in the folder
-    filenames_array, filenames_json = _get_filenames(filepath)
+    # Delete the existing files in the folder
+    filenames_array, filenames_json = _glob_filenames(dirpath)
     for filename in filenames_array + filenames_json:
-        filename.unlink()
+        filename.unlink(missing_ok=True)
 
     # Check the size of properties is consistent with the number of arrays
     num = len(arrays)
@@ -172,15 +187,15 @@ def save(filepath: PathLike, arrays: Union[np.ndarray, List[np.ndarray]], **kwar
 
         def task(_name: PathLike, _array: np.ndarray, **_kwargs) -> Path:
             """Save array to a file with properties in json format."""
-            filename_array = save_array(_name, _array)
+            filename_array = _save_array(_name, _array)
             filename_json = filename_array.with_suffix(".json")
-            save_json(filename_json, _kwargs)
+            _save_json(filename_json, _kwargs)
             return filename_array
 
         z_width = len(str(num))
         furutes = []
         for i in range(len(arrays)):
-            name_i = filepath / f"{i:0{z_width}}"
+            name_i = dirpath / f"{i:0{z_width}}"
             arrays_i = arrays[i]
             kwargs_i = {key: kwargs[key][i] for key in kwargs}
             future = executor.submit(task, name_i, arrays_i, **kwargs_i)
@@ -190,23 +205,51 @@ def save(filepath: PathLike, arrays: Union[np.ndarray, List[np.ndarray]], **kwar
             future.result()
 
 
-def load(filepath: PathLike) -> Tuple[List[np.ndarray], Dict[str, List[Any]]]:
-    """Load multiple arrays with properties."""
-    filepath = Path(filepath)
+def load(dirpath: PathLike) -> Tuple[List[np.ndarray], Dict[str, List[Any]]]:
+    """Load multiple arrays with properties.
+
+    Parameters
+    ----------
+    dirpath : PathLike
+        The folder path containing arrays and properties.
+
+    Returns
+    -------
+    arrays : List[np.ndarray]
+        List of arrays.
+    props : Dict[str, List[Any]]
+        Dictionary of properties.
+    """
+    dirpath = Path(dirpath)
 
     # Check the folder exists
-    if not filepath.is_dir():
-        raise FileNotFoundError(f"'{filepath}' is not a existing folder.")
+    if not dirpath.is_dir():
+        raise FileNotFoundError(f"'{dirpath}' is not a existing folder.")
 
-    filenames_array, filenames_json = _get_filenames(filepath)
+    filenames_array, filenames_json = _glob_filenames(dirpath)
+
+    # Check the existence of json files
+    filenames_missing_json = [str(filename_json) for filename_json in filenames_json if not filename_json.exists()]
+    if filenames_missing_json:
+        warnings.warn(f"The following json files are missing: {filenames_missing_json}", PolanalyserWarning)
+
+    # Load all json files and get all possible keys
+    keys = set()
+    for filename_json in filenames_json:
+        if filename_json.exists():
+            props = _load_json(filename_json)
+            keys.update(props.keys())
 
     # Load arrays and properties in parallel
     with ThreadPoolExecutor() as executor:
 
-        def task(_filename_array: PathLike, _filename_json: PathLike) -> Tuple[np.ndarray, Dict[str, Any]]:
+        def task(_filename_array: Path, _filename_json: Path) -> Tuple[np.ndarray, Dict[str, Any]]:
             """Load array and properties from a file with json format."""
-            array = load_array(_filename_array)
-            props = load_json(_filename_json)
+            array = _load_array(_filename_array)
+            if _filename_json.exists():
+                props = _load_json(_filename_json)
+            else:
+                props = {}
             return array, props
 
         futures = []
@@ -215,13 +258,11 @@ def load(filepath: PathLike) -> Tuple[List[np.ndarray], Dict[str, List[Any]]]:
             futures.append(future)
 
         arrays = []
-        props = {}
+        props = {key: [] for key in keys}
         for future in futures:
             array, prop = future.result()
             arrays.append(array)
-            for key in prop:
-                if key not in props:
-                    props[key] = []
-                props[key].append(prop[key])
+            for key in keys:
+                props[key].append(prop.get(key, None))
 
     return arrays, props
