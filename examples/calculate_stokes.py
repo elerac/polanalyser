@@ -10,6 +10,7 @@ import polanalyser as pa
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=str, default="dataset/dragon.png")
+    parser.add_argument("-g", "--gamma", type=float, default=2.2)
     args = parser.parse_args()
 
     # Read image
@@ -18,18 +19,20 @@ def main():
     if img_raw is None:
         raise ValueError(f"Input image is None, '{filename}'")
 
-    # Adjust the brightness of the EXR image
-    # assuming the input image is in the range of [0,1].
-    ext = os.path.splitext(filename)[1]
-    if ext == ".exr":
-        img_raw = 255.0 * img_raw
+    # Adjust the brightness
+    if img_raw.dtype == np.uint8:
+        max_val = 255.0
+    elif img_raw.dtype == np.uint16:
+        max_val = 65535.0
+    else:
+        max_val = 1.0
 
     # Demosaicing
     img_demosaiced_list = pa.demosaicing(img_raw, pa.COLOR_PolarMono)
     img_000, img_045, img_090, img_135 = img_demosaiced_list
 
     # Calculate Stokes vector from intensity images and polarizer angles
-    img_stokes = pa.calcStokes(img_demosaiced_list, np.deg2rad([0, 45, 90, 135]))
+    img_stokes = 0.5 * pa.calcStokes(img_demosaiced_list, np.deg2rad([0, 45, 90, 135]))
 
     # Stokes to parameters (s0, s1, s2, Intensity(s0) DoLP, AoLP)
     img_s0 = img_stokes[..., 0]
@@ -40,10 +43,10 @@ def main():
     img_aolp = pa.cvtStokesToAoLP(img_stokes)  # [0, pi]
 
     # Apply colormap or adjust the brightness to export images
-    img_intensity_vis = np.clip(255 * ((img_intensity / 255 / 2) ** (1 / 2.2)), 0, 255).astype(np.uint8)
-    img_s0_vis = pa.applyColorMap(img_s0, "bwr", vmin=-64, vmax=64)
-    img_s1_vis = pa.applyColorMap(img_s1, "bwr", vmin=-64, vmax=64)
-    img_s2_vis = pa.applyColorMap(img_s2, "bwr", vmin=-64, vmax=64)
+    img_intensity_vis = np.clip(255 * ((img_intensity / max_val) ** (1 / args.gamma)), 0, 255).astype(np.uint8)
+    img_s0_vis = pa.applyColorMap(img_s0, "bwr", vmin=-max_val / 2, vmax=max_val / 2)
+    img_s1_vis = pa.applyColorMap(img_s1, "bwr", vmin=-max_val / 2, vmax=max_val / 2)
+    img_s2_vis = pa.applyColorMap(img_s2, "bwr", vmin=-max_val / 2, vmax=max_val / 2)
     img_dolp_vis = pa.applyColorToDoP(img_dolp)
     img_aolp_vis = pa.applyColorToAoLP(img_aolp)  # Hue = AoLP, Saturation = 1, Value = 1
     img_aolp_s_vis = pa.applyColorToAoLP(img_aolp, saturation=img_dolp)  # Hue = AoLP, Saturation = DoLP, Value = 1
