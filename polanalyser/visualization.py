@@ -156,6 +156,10 @@ def applyColorToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = N
         Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
     dop : Optional[np.ndarray], optional
         Degree of Polarization, its shape is (height, width), by default None
+    c_l : npt.ArrayLike, optional
+        Color of linear polarization in BGR, by default cyan [255, 255, 0]
+    c_c : npt.ArrayLike, optional
+        Color of circular polarization in BGR, by default yellow [0, 255, 255]
 
     Returns
     -------
