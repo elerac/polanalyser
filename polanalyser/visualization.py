@@ -177,7 +177,7 @@ def applyColorToToP(ellipticity_angle: np.ndarray, dop: Optional[np.ndarray] = N
     return top
 
 
-def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = None) -> npt.NDArray[np.uint8]:
+def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = None, c_r: npt.ArrayLike = [255, 0, 0], c_l: npt.ArrayLike = [0, 255, 255]) -> npt.NDArray[np.uint8]:
     """Apply color to CoP (Chirality of Polarization)
 
     Parameters
@@ -186,6 +186,10 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
         Ellipticity angle, its shape is (height, width). The range is from -pi/4 to pi/4
     docp : Optional[np.ndarray], optional
         Degree of Circular Polarization, its shape is (height, width), by default None
+    c_r : npt.ArrayLike, optional
+        Color of right-handed polarization in BGR, by default blue [255, 0, 0]
+    c_l : npt.ArrayLike, optional
+        Color of left-handed polarization in BGR, by default yellow [0, 255, 255]
 
     Returns
     -------
@@ -193,8 +197,8 @@ def applyColorToCoP(ellipticity_angle: np.ndarray, docp: Optional[np.ndarray] = 
         An applied color to CoP, its shape is (height, width, 3) and dtype is `np.uint8`
     """
     colormap = np.zeros((256, 3), dtype=np.uint8)
-    colormap[:128] = np.linspace(1, 0, 128)[..., None] * np.array([255, 0, 0])
-    colormap[128:] = np.linspace(0, 1, 128)[..., None] * np.array([0, 255, 255])
+    colormap[:128] = np.linspace(1, 0, 128)[..., None] * np.array(c_l)
+    colormap[128:] = np.linspace(0, 1, 128)[..., None] * np.array(c_r)
     if docp is None:
         docp = np.ones_like(ellipticity_angle)
 
