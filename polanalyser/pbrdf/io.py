@@ -74,7 +74,7 @@ def load_pbsdf(filepath_pbsdf: Union[str, Path]) -> Dict[str, np.ndarray]:
         result = {}
         for k, v in fields.items():
             f.seek(v[0])
-            result[k] = np.fromfile(f, dtype=v[1], count=np.prod(v[2])).reshape(v[2])
+            result[k] = np.fromfile(f, dtype=v[1], count=np.prod(v[2], dtype=np.uint64)).reshape(v[2])
 
     return result
 
