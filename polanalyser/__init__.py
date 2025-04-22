@@ -11,3 +11,6 @@ from .io import *
 from . import random
 from .spectrum import spectrum_to_color
 from .pbrdf import *
+
+# Alias for old style
+gammaCorrection = gamma

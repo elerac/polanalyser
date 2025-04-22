@@ -8,8 +8,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
-def gammaCorrection(x: np.ndarray, gamma: float = 1 / 2.2) -> np.ndarray:
-    """Gamma correction for both positive and negative values. This function is particularly useful in enhancing the small values of Stokes and Mueller.
+def gamma(x: np.ndarray, gamma: float = 1 / 2.2) -> np.ndarray:
+    """Gamma correction for both positive and negative values.
+
+    This function is particularly useful in enhancing the small values of Stokes vector and Mueller matrix.
 
     Parameters
     ----------
