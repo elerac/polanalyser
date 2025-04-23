@@ -479,12 +479,12 @@ cmf = np.array(
 
 
 def spectrum_to_color(values: np.ndarray, wvls: np.ndarray) -> np.ndarray:
-    """Converts a spectrum to color.
+    """Converts spectrum to color.
 
     Parameters
     ----------
     values : np.ndarray, (..., N)
-        Spectrum values.
+        Intensity values of the spectrum.
     wvls : np.ndarray, (N,)
         Wavelengths of the spectrum.
 
@@ -505,16 +505,12 @@ def spectrum_to_color(values: np.ndarray, wvls: np.ndarray) -> np.ndarray:
     for i in range(3):
         interpolated_xyz[:, i] = np.interp(wvls, ref_wvls, ref_xyz[:, i])
 
-    # Normalize the interpolated data
-    interpolated_xyz /= np.sum(interpolated_xyz, axis=-1, keepdims=True)
-
     # Spectrum to XYZ
-    xyz = np.dot(values, interpolated_xyz)
+    xyz = np.dot(values, interpolated_xyz) / len(wvls)
 
     # XYZ to sRGB
     matrix = np.array([[3.2406, -1.5372, -0.4986], [-0.9689, 1.8758, 0.0415], [0.0557, -0.2040, 1.0570]])
     rgb = np.dot(xyz, matrix.T)
-    rgb = np.clip(rgb, 0, 1)
 
     # RGB to BGR (for OpenCV)
     bgr = rgb[..., ::-1]
