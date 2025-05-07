@@ -1,10 +1,11 @@
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 import numpy as np
 import numpy.typing as npt
 import cv2
 import matplotlib
-
+import matplotlib.cm
 import matplotlib.pyplot as plt
+
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
@@ -28,12 +29,12 @@ def gamma(x: np.ndarray, gamma: float = 1 / 2.2) -> np.ndarray:
     return (np.abs(x) ** gamma) * np.sign(x)
 
 
-def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap, np.ndarray], vmin: float = 0.0, vmax: float = 255.0) -> npt.NDArray[np.uint8]:
+def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap, np.ndarray], vmin: float = 0.0, vmax: float = 255.0, nan: Union[int, Sequence[int], npt.NDArray[np.uint8]] = 255) -> npt.NDArray[np.uint8]:
     """Apply a matplotlib colormap on a given array
 
     Parameters
     ----------
-    x : np.ndarray
+    x : np.ndarray, (...,)
         Input array
     colormap : Union[str, matplotlib.colors.Colormap, np.ndarray]
         Colormap to apply.
@@ -44,10 +45,12 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap
         The minimum value to normalize, by default 0.0
     vmax : float, optional
         The maximum value to normalize, by default 255.0
+    nan : int, Sequence[int], npt.NDArray[np.uint8], optional
+        The value to set for NaN values, by default 255. You can specify a scalar value or a 3-channel color value.
 
     Returns
     -------
-    x_color : np.ndarray
+    x_color : np.ndarray, (..., 3)
         Colormapped source array. The last channel is added for the color channel, and the dtype is `np.uint8`.
 
     Examples
@@ -76,6 +79,10 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap
     >>> custom_colormap[128:] = np.linspace(0, 1, 128)[..., None] * np.array([0, 255, 0])
     >>> x_colored = applyColorMap(x, custom_colormap, vmin=-1.0, vmax=1.0)
     """
+    # Temporarily set NaN values to vmin
+    x_mask = np.isnan(x)
+    x[x_mask] = vmin
+
     # Normalize the input array
     x_normalized = np.clip((x - vmin) / (vmax - vmin), 0.0, 1.0)  # [0.0, 1.0]
     x_normalized_u8 = (255 * x_normalized).astype(np.uint8)  # [0, 255]
@@ -97,6 +104,8 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap
         raise TypeError(f"'colormap' must be 'str' or 'np.ndarray ((256, 3), np.uint8)'.")
 
     x_colored = lut_u8[x_normalized_u8]  # [0, 255], BGR
+
+    x_colored[x_mask] = nan  # Set NaN values to the specified value
 
     return x_colored
 
