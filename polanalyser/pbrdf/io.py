@@ -13,14 +13,6 @@ from typing import Union, Dict
 import numpy as np
 
 
-def size_fmt(num, suffix="B"):
-    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi"]:
-        if abs(num) < 1024.0:
-            return "%3.1f %s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f %s%s" % (num, "Yi", suffix)
-
-
 def load(file: Union[str, Path]) -> Dict[str, np.ndarray]:
     """Load pBRDF table.
 
@@ -161,22 +153,3 @@ def save(file: Union[str, Path], **pbrdf_table):
 
             # Field data
             v.tofile(f)
-
-
-def main():
-    filepath_pbsdf = "pbsdf/2_white_billiard_mitsuba/2_white_billiard_inpainted.pbsdf"
-    pbrdf = load_pbsdf(filepath_pbsdf)
-    print(pbrdf.keys())
-    print(pbrdf["M"].shape)
-
-    M = np.random.rand(361, 91, 91, 5, 4, 4)
-    phi_d = np.linspace(0, 2 * np.pi, 361)
-    theta_d = np.linspace(0, np.pi, 91)
-    theta_h = np.linspace(0, np.pi, 91)
-    wvls = np.array([400, 450, 550, 650, 700])
-    pbrdf = {"M": M, "phi_d": phi_d, "theta_d": theta_d, "theta_h": theta_h, "wvls": wvls}
-    save_pbsdf("test.pbsdf", **pbrdf)
-
-
-if __name__ == "__main__":
-    main()
