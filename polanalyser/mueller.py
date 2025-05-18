@@ -1,5 +1,7 @@
 import numpy as np
 import numpy.typing as npt
+from . import random
+from . import stokes
 
 
 def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.ArrayLike) -> np.ndarray:
@@ -353,3 +355,114 @@ def diattenuator(d: npt.ArrayLike, t: float = 1.0) -> np.ndarray:
     M_D[1:, 0] = d
     M_D[1:, 1:] = m_D
     return t * M_D
+
+
+ISMUELLER_STOKES = "ISMUELLER_STOKES"  # Stokes criterion by brute-force
+ISMUELLER_GK = "ISMUELLER_GK"  # Givens-Kostinski, 1993
+
+
+def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_size: int = 100, atol: float = 1e-4) -> np.ndarray:
+    """Check physical realizability of Mueller matrix using Stokes criterion by brute-force.
+
+    This function checks the Stokes criterion by projecting a dense set of Stokes vectors and verifying that the resulting output vectors remain physically valid Stokes vectors.
+
+    To improve efficiency, this function divide the input Stokes vectors into small chunks and terminate early, avoiding unnecessary computation.
+
+    Parameters
+    ----------
+    mueller : array_like
+        Mueller matrix of shape (..., 4, 4).
+    total_size : int, optional
+        Total number of Stokes vectors to test, by default 10000.
+    chunk_size : int, optional
+        Number of Stokes vectors to test in each chunk, by default 100.
+    atol : float, optional
+        Absolute tolerance for checking Stokes vectors, by default 1e-4.
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array of shape (...) indicating whether the Mueller matrix is valid.
+    """
+    mueller = np.asarray(mueller)  # (..., 4, 4)
+    *size, _, _ = mueller.shape
+    dtype = mueller.dtype
+
+    is_valid = np.full(size, True, dtype=bool)
+    count = 0
+    while True:
+        # Project random Stokes vectors to the Mueller matrix
+        s_in = random.stokes(dop=1.0, size=chunk_size).astype(dtype)  # (chunk_size, 4)
+        s_out = np.einsum("...ij,...kj->...ki", mueller[is_valid], s_in, optimize="optimal")  # (..., chunk_size, 4)
+
+        # The output should be valid Stokes vectors
+        isstokes = stokes.isstokes(s_out, atol)  # (..., chunk_size)
+        is_valid[is_valid] = np.all(isstokes, axis=-1)  # (...)
+
+        # Check the exit condition
+        count += chunk_size
+        if count >= total_size:
+            break
+        chunk_size = min(chunk_size, total_size - count)
+
+    return is_valid
+
+
+def _ismueller_gk(mueller: npt.ArrayLike) -> np.ndarray:
+    """Check physical realizability of Mueller matrix using Givens-Kostinski method[1]_.
+
+    Parameters
+    ----------
+    mueller : array_like
+        Mueller matrix of shape (..., 4, 4).
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array of shape (...) indicating whether the Mueller matrix is valid.
+
+    References
+    ----------
+    .. [1] Givens, Clark R., and Alexander B. Kostinski. "A simple necessary and sufficient condition on physically realizable Mueller matrices." Journal of Modern Optics 40.3 (1993): 471-481.
+    """
+    # Apply eigenvalue decomposition to (G @ M.T @ G @ M)
+    M = np.asarray(mueller)  # (..., 4, 4)
+    M_T = np.moveaxis(M, -1, -2)  # (..., 4, 4)
+    G = np.diag([1.0, -1.0, -1.0, -1.0])  # (4, 4)
+    eigenvalues, eigenvectors = np.linalg.eigh(G @ M_T @ G @ M)  # (..., 4), (..., 4, 4)
+
+    # All eigenvalues should be real
+    is_real = np.all(np.isclose(np.imag(eigenvalues), 0), axis=-1)  # (...,)
+
+    # The eigenvector s_{\sigma_1} corresponding to the largest eigenvalue should itself be a valid Stokes vector
+    index = np.argmax(np.abs(eigenvalues), axis=-1)  # (...,)
+    stokes_sigma1 = np.take_along_axis(eigenvectors, index[..., None, None], axis=-1).squeeze(-1)  # (..., 4)
+    stokes_sigma1 = stokes_sigma1 / stokes_sigma1[..., 0:1]  # Normalize by s0
+    is_stokes = stokes.isstokes(stokes_sigma1)  # (...,)
+
+    return is_real & is_stokes  # (...,)
+
+
+def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK) -> np.ndarray:
+    """Check physical realizability of Mueller matrix.
+
+    Parameters
+    ----------
+    mueller : array_like
+        Mueller matrix of shape (..., 4, 4).
+    method : str, optional
+        Method to use for checking physical realizability, by default pa.ISMUELLER_GK.
+        - pa.ISMUELLER_GK: Givens-Kostinski 1993
+        - pa.ISMUELLER_STOKES: Stokes criterion by brute-force
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array of shape (...) indicating whether the Mueller matrix is valid.
+    """
+    if method == ISMUELLER_GK:  # Givens-Kostinski, 1993
+        return _ismueller_gk(mueller)
+    elif method == ISMUELLER_STOKES:  # Stokes criterion by brute-force
+        return _ismueller_stokes(mueller)
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'ISMUELLER_STOKES' or 'ISMUELLER_GK'.")
