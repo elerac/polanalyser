@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Union, Tuple
 import numpy as np
 import numpy.typing as npt
-from .io import load_pbsdf
+from .io import load
 
 
 def directions_to_rusinkiewicz(wi: np.ndarray, wo: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -75,7 +75,7 @@ class MeasuredPolarimetricBRDF:
     """
 
     def __init__(self, filepath_pbsdf: Union[str, Path]):
-        pbrdf_table = load_pbsdf(filepath_pbsdf)
+        pbrdf_table = load(filepath_pbsdf)
         self.M = pbrdf_table["M"]  # (361, 91, 91, 5, 4, 4)
         self.phi_d = np.atleast_1d(pbrdf_table["phi_d"].squeeze())  # (361,)
         self.theta_d = np.atleast_1d(pbrdf_table["theta_d"].squeeze())  # (91,)

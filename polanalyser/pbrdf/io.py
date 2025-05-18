@@ -21,12 +21,12 @@ def size_fmt(num, suffix="B"):
     return "%.1f %s%s" % (num, "Yi", suffix)
 
 
-def load_pbsdf(filepath_pbsdf: Union[str, Path]) -> Dict[str, np.ndarray]:
+def load(file: Union[str, Path]) -> Dict[str, np.ndarray]:
     """Load pBRDF table.
 
     Parameters
     ----------
-    filepath_pbsdf : Union[str, Path]
+    file : Union[str, Path]
         Path to the pBRDF table.
 
     Returns
@@ -34,18 +34,17 @@ def load_pbsdf(filepath_pbsdf: Union[str, Path]) -> Dict[str, np.ndarray]:
     Dict[str, np.ndarray]
         pBRDF table with auxiliary information.
 
-
     Examples
     --------
     >>> filepath_pbsdf = "2_white_billiard_mitsuba/2_white_billiard_inpainted.pbsdf"
-    >>> pbrdf = load_pbsdf(filepath_pbsdf)
-    >>> pbrdf.keys()
+    >>> pbrdf_table = pa.pbrdf.load(filepath_pbsdf)
+    >>> pbrdf_table.keys()
     dict_keys(['M', 'phi_d', 'theta_d', 'theta_h', 'wvls'])
-    >>> pbrdf["M"].shape
+    >>> pbrdf_table["M"].shape
     (361, 91, 91, 5, 4, 4)
     """
 
-    with open(filepath_pbsdf, "rb") as f:
+    with open(file, "rb") as f:
 
         def unpack(fmt):
             result = struct.unpack(fmt, f.read(struct.calcsize(fmt)))
@@ -79,13 +78,15 @@ def load_pbsdf(filepath_pbsdf: Union[str, Path]) -> Dict[str, np.ndarray]:
     return result
 
 
-def save_pbsdf(filename: Union[str, Path], align=8, **kwargs):
+def save(file: Union[str, Path], **pbrdf_table):
     """Save pBRDF table.
 
     Parameters
     ----------
-    filename : Union[str, Path]
+    file : Union[str, Path]
         Path to save the pBRDF table.
+    pbrdf_table : Dict[str, np.ndarray]
+        pBRDF table with auxiliary information.
 
     Examples
     --------
@@ -94,11 +95,12 @@ def save_pbsdf(filename: Union[str, Path], align=8, **kwargs):
     >>> theta_d = np.linspace(0, np.pi, 91)
     >>> theta_h = np.linspace(0, np.pi, 91)
     >>> wvls = np.array([400, 450, 550, 650, 700])
-    >>> pbrdf = {"M": M, "phi_d": phi_d, "theta_d": theta_d, "theta_h": theta_h, "wvls": wvls}
-    >>> save_pbsdf("test.pbsdf", **pbrdf)
+    >>> pbrdf_table = {"M": M, "phi_d": phi_d, "theta_d": theta_d, "theta_h": theta_h, "wvls": wvls}
+    >>> pa.pbrdf.save("test.pbsdf", **pbrdf_table)
     """
+    align = 8
 
-    with open(filename, "wb") as f:
+    with open(file, "wb") as f:
         # Identifier
         f.write("tensor_file\0".encode("utf8"))
 
@@ -106,13 +108,13 @@ def save_pbsdf(filename: Union[str, Path], align=8, **kwargs):
         f.write(struct.pack("<BB", 1, 0))
 
         # Number of fields
-        f.write(struct.pack("<I", len(kwargs)))
+        f.write(struct.pack("<I", len(pbrdf_table)))
 
         # Maps to Struct.EType field in Mitsuba
         dtype_map = {np.uint8: 1, np.int8: 2, np.uint16: 3, np.int16: 4, np.uint32: 5, np.int32: 6, np.uint64: 7, np.int64: 8, np.float16: 9, np.float32: 10, np.float64: 11}
 
         offsets = {}
-        fields = dict(kwargs)
+        fields = dict(pbrdf_table)
 
         # Write all fields
         for k, v in fields.items():

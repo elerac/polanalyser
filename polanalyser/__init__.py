@@ -10,7 +10,10 @@ from .container import PolarizationContainer
 from .io import *
 from . import random
 from .spectrum import spectrum_to_color
-from .pbrdf import *
+from .pbrdf import MeasuredPolarimetricBRDF
+
 
 # Alias for old style
 gammaCorrection = gamma
+load_pbsdf = pbrdf.load
+save_pbsdf = pbrdf.save
