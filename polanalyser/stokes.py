@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-from .mueller import polarizer
+from . import mueller
 
 
 def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
@@ -96,7 +96,7 @@ def calcLinearStokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike
     stokes : np.ndarray
         Calculated stokes parameters
     """
-    muellers = [polarizer(angle)[:3, :3] for angle in polarizer_angles]
+    muellers = [mueller.polarizer(angle)[:3, :3] for angle in polarizer_angles]
     return calcStokes(intensities, muellers)
 
 
