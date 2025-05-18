@@ -360,6 +360,6 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
     # The DoP should be smaller than 1
     # (s0**2 - (s1**2 + s2**2 + s3**2)) >= 0
     # but allow a small negative value due to numerical errors
-    is_valid_dop = (s0**2 - (s1**2 + s2**2 + s3**2)) > -abs(atol)
+    is_valid_dop = (s0**2 - (s1**2 + s2**2 + s3**2)) >= -abs(atol)
 
     return np.bitwise_and(is_valid_intensity, is_valid_dop)
