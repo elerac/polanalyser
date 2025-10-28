@@ -3,8 +3,8 @@ import numpy as np
 import numpy.typing as npt
 import cv2
 import matplotlib
-import matplotlib.cm
 import matplotlib.pyplot as plt
+import matplotlib.colors
 
 from mpl_toolkits.axes_grid1 import ImageGrid
 
@@ -90,7 +90,7 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap
     # Get colormap
     if isinstance(colormap, (str, matplotlib.colors.Colormap)):
         # from matplotlib
-        cmap = matplotlib.cm.get_cmap(colormap, 256)
+        cmap = matplotlib.colormaps.get_cmap(colormap)
         lut = cmap(range(256))  # [0.0, 1.0], (256, 4), np.float64, RGBA
         lut = lut[:, :3]  # [0.0, 1.0], (256, 3), np.float64, RGB
         lut = lut[:, ::-1]  # [0.0, 1.0], (256, 3), np.float64, BGR
