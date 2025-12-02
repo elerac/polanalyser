@@ -44,7 +44,7 @@ def demosaicing(img_raw: np.ndarray, code: ColorConversionCode = COLOR_PolarMono
     if np.issubdtype(dtype, np.floating):
         # If the dtype is floting type, the image is converted into `uint16` to apply demosaicing process.
         # It may cause inaccurate result.
-        scale = 65535.0 / np.max(img_raw)
+        scale = 65535.0 / np.nanmax(img_raw)
         img_raw_u16 = np.clip(img_raw * scale, 0, 65535).astype(np.uint16)
         img_demosaiced_u16 = demosaicing(img_raw_u16, code)
         img_demosaiced = (img_demosaiced_u16 / scale).astype(img_raw.dtype)
