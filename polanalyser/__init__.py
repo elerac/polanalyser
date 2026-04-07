@@ -17,3 +17,4 @@ from .pbrdf import MeasuredPolarimetricBRDF
 gammaCorrection = gamma
 load_pbsdf = pbrdf.load
 save_pbsdf = pbrdf.save
+from .vis import *
