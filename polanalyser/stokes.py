@@ -1,6 +1,65 @@
+"""Stokes vector related functions."""
+
 import numpy as np
 import numpy.typing as npt
+
 from . import mueller
+
+
+def stokes(s0: npt.ArrayLike, dop: npt.ArrayLike, aolp: npt.ArrayLike, eang: npt.ArrayLike) -> np.ndarray:
+    """Generate Stokes vector from [s0, dop, aolp, eang].
+
+    Parameters
+    ----------
+    s0 : array_like, (...,)
+        Intensity of the light. Must be non-negative.
+    dop : array_like, (...,)
+        Degree of polarization in [0, 1].
+    aolp : array_like, (...,)
+        Angle of linear polarization in [0, pi].
+    eang : array_like, (...,)
+        Ellipticity angle in [-pi/4, pi/4].
+
+    Returns
+    -------
+    stokes : ndarray, (..., 4)
+        Stokes vector constructed from the inputs.
+
+    Examples
+    --------
+    >>> pa.stokes(s0=1.0, dop=1.0, aolp=0.0, eang=0.0)  # Linear horizontal polarization
+    [1. 1. 0. 0.]
+    >>> pa.stokes(s0=1.0, dop=1.0, aolp=np.pi/4, eang=0.0)  # Linear +45 degree polarization
+    [1. 0. 1. 0.]
+    >>> pa.stokes(s0=1.0, dop=1.0, aolp=0.0, eang=np.pi/4)  # Right circular polarization
+    [1. 0. 0. 1.]
+    >>> pa.stokes(s0=1.0, dop=1.0, aolp=0.0, eang=-np.pi/4)  # Left circular polarization
+    [ 1.  0.  0. -1.]
+    >>> pa.stokes(s0=1.0, dop=0.0, aolp=0.0, eang=0.0)  # Unpolarized light
+    [1. 0. 0. 0.]
+    """
+    s0 = np.asarray(s0)
+    dop = np.asarray(dop)
+    aolp = np.asarray(aolp)
+    eang = np.asarray(eang)
+
+    if np.any(s0 < 0):
+        raise ValueError("Intensity must be non-negative")
+
+    if np.any(np.logical_or(dop < 0, 1 < dop)):
+        raise ValueError("Degree of polarization (dop) must be in the range [0, 1]")
+
+    if np.any(np.logical_or(aolp < 0, np.pi < aolp)):
+        raise ValueError("Angle of linear polarization (aolp) must be in the range [0, pi]")
+
+    if np.any(np.logical_or(eang < -np.pi / 4, np.pi / 4 < eang)):
+        raise ValueError("Ellipticity angle (eang) must be in the range [-pi/4, pi/4]")
+
+    s0, dop, aolp, eang = np.broadcast_arrays(s0, dop, aolp, eang)
+    s1 = s0 * dop * np.cos(2 * aolp) * np.cos(2 * eang)
+    s2 = s0 * dop * np.sin(2 * aolp) * np.cos(2 * eang)
+    s3 = s0 * dop * np.sin(2 * eang)
+    return np.stack([s0, s1, s2, s3], axis=-1)
 
 
 def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
@@ -15,7 +74,7 @@ def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarra
 
     Returns
     -------
-    stokes : np.ndarray
+    stokes : ndarray
         Calculated stokes parameters
 
     Examples
@@ -52,7 +111,7 @@ def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarra
     >>> np.allclose(stokes, stokes_pred)
     True
     """
-    # Convert ArrayLike object to np.ndarray
+    # Convert ArrayLike object to ndarray
     intensities = np.array(intensities)  # (N, *)
     muellers = np.array(muellers)  # (N, *)
 
@@ -93,78 +152,49 @@ def calcLinearStokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike
 
     Returns
     -------
-    stokes : np.ndarray
+    stokes : ndarray
         Calculated stokes parameters
     """
     muellers = [mueller.polarizer(angle)[:3, :3] for angle in polarizer_angles]
     return calcStokes(intensities, muellers)
 
 
-def _movelastaxis(a: np.ndarray, source: int) -> np.ndarray:
+def _movelastaxis(a: npt.ArrayLike, source: int) -> np.ndarray:
     """Equivalent to `np.moveaxis(a, source, -1)` but does not move the axis if source is -1"""
+    a = np.asarray(a)
     if source != -1:
         a = np.moveaxis(a, source, -1)
     return a
 
 
-def cvtStokesToImax(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to Imax (maximum value when rotating the linear polarizer)
+def stokes_to_dolp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
+    """Convert Stokes vector to DoLP (Degree of Linear Polarization).
+
+    .. math::
+        \\text{DoLP} = \\frac{\\sqrt{s_1^2 + s_2^2}}{s_0}.
 
     Parameters
     ----------
-    stokes : np.ndarray
-        Stokes parameters
+    stokes : array_like, (..., 3) or (..., 4)
+        Stokes vector.
     axis : int, optional
-        Axis of the stokes channel, by default -1
+        Axis of the stokes channel, by default -1.
 
     Returns
     -------
-    i_max : np.ndarray
-        Imax
-    """
-    stokes = _movelastaxis(stokes, axis)
-    s0 = stokes[..., 0]
-    s1 = stokes[..., 1]
-    s2 = stokes[..., 2]
-    return (s0 + np.sqrt(s1**2 + s2**2)) * 0.5
+    dolp : ndarray, (...)
+        DoLP [0, 1].
 
-
-def cvtStokesToImin(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to Imin (minimum value when rotating the linear polarizer)
-
-    Parameters
-    ----------
-    stokes : np.ndarray
-        Stokes parameters
-    axis : int, optional
-        Axis of the stokes channel, by default -1
-
-    Returns
-    -------
-    i_min : np.ndarray
-        Imin
-    """
-    stokes = _movelastaxis(stokes, axis)
-    s0 = stokes[..., 0]
-    s1 = stokes[..., 1]
-    s2 = stokes[..., 2]
-    return (s0 - np.sqrt(s1**2 + s2**2)) * 0.5
-
-
-def cvtStokesToDoLP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to DoLP (Degree of Linear Polarization)
-
-    Parameters
-    ----------
-    stokes : np.ndarray
-        Stokes parameters
-    axis : int, optional
-        Axis of the stokes channel, by default -1
-
-    Returns
-    -------
-    DoLP : np.ndarray
-        DoLP ∈ [0, 1]
+    Examples
+    --------
+    >>> pa.stokes_to_dolp([1.0, 0.0, 0.0, 0.0])  # Unpolarized light
+    0.0
+    >>> pa.stokes_to_dolp([1.0, 1.0, 0.0, 0.0])  # Fully linear polarized light
+    1.0
+    >>> pa.stokes_to_dolp([1.0, 0.0, 0.0, 1.0])  # Fully circularly polarized light
+    0.0
+    >>> pa.stokes_to_dolp([1.0, 0.5, 0.5, 0.5])  # Partially polarized light
+    0.707
     """
     stokes = _movelastaxis(stokes, axis)
     s0 = stokes[..., 0]
@@ -173,101 +203,71 @@ def cvtStokesToDoLP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
     return np.sqrt(s1**2 + s2**2) / s0
 
 
-def cvtStokesToAoLP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to AoLP (Angle of Linear Polarization)
+def stokes_to_aolp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
+    """Convert Stokes vector to AoLP (Angle of Linear Polarization).
+
+    .. math::
+        \\text{AoLP} = \\frac{1}{2} \\tan^{-1} \\left( \\frac{s_2}{s_1} \\right).
 
     Parameters
     ----------
-    stokes : np.ndarray
-        Stokes parameters
+    stokes : array_like, (..., 3) or (..., 4)
+        Stokes vector.
     axis : int, optional
-        Axis of the stokes channel, by default -1
+        Axis of the stokes channel, by default -1.
 
     Returns
     -------
-    AoLP : np.ndarray
-        AoLP ∈ [0, np.pi]
+    aolp : ndarray, (...)
+        AoLP [0, pi].
+
+    Examples
+    --------
+    >>> pa.stokes_to_aolp([1.0, 1.0, 0.0, 0.0])  # Linear horizontal polarization
+    0.0
+    >>> pa.stokes_to_aolp([1.0, 0.0, 1.0, 0.0])  # Linear +45 degree polarization
+    0.785
+    >>> pa.stokes_to_aolp([1.0, -1.0, 0.0, 0.0])  # Linear vertical polarization
+    1.571
+    >>> pa.stokes_to_aolp([1.0, 0.0, -1.0, 0.0])  # Linear -45 degree polarization
+    2.356
     """
     stokes = _movelastaxis(stokes, axis)
     s1 = stokes[..., 1]
     s2 = stokes[..., 2]
-    return np.mod(0.5 * np.arctan2(s2, s1), np.pi)
+    aolp = 0.5 * np.arctan2(s2, s1)  # [-pi/2, pi/2]
+    aolp = np.where(aolp < 0, aolp + np.pi, aolp)  # Map to [0, pi]
+    return aolp
 
 
-def cvtStokesToIntensity(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to intensity (same as s0 component)
+def stokes_to_dop(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
+    """Convert Stokes vector to DoP (Degree of Polarization).
 
-    Parameters
-    ----------
-    stokes : np.ndarray
-        Stokes parameters
-    axis : int, optional
-        Axis of the stokes channel, by default -1
-
-    Returns
-    -------
-    intensity : np.ndarray
-        Intensity
-    """
-    stokes = _movelastaxis(stokes, axis)
-    s0 = stokes[..., 0]
-    return s0
-
-
-def cvtStokesToDiffuse(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to diffuse
+    .. math::
+        \\text{DoP} = \\frac{\\sqrt{s_1^2 + s_2^2 + s_3^2}}{s_0}.
 
     Parameters
     ----------
-    stokes : np.ndarray
-        Stokes parameters
+    stokes : array_like, (..., 4)
+        Stokes vector.
     axis : int, optional
-        Axis of the stokes channel, by default -1
+        Axis of the stokes channel, by default -1.
 
     Returns
     -------
-    diffuse : np.ndarray
-        Diffuse
-    """
-    Imin = cvtStokesToImin(stokes, axis)
-    return Imin
+    dop : ndarray, (...)
+        DoP [0, 1]
 
-
-def cvtStokesToSpecular(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to specular
-
-    Parameters
-    ----------
-    stokes : np.ndarray
-        Stokes parameters
-    axis : int, optional
-        Axis of the stokes channel, by default -1
-
-    Returns
-    -------
-    specular : np.ndarray
-        Specular
-    """
-    stokes = _movelastaxis(stokes, axis)
-    s1 = stokes[..., 1]
-    s2 = stokes[..., 2]
-    return np.sqrt(s1**2 + s2**2)  # same as Imax - Imin
-
-
-def cvtStokesToDoP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to DoP (Degree of Polarization)
-
-    Parameters
-    ----------
-    stokes : np.ndarray
-        Stokes parameters
-    axis : int, optional
-        Axis of the stokes channel, by default -1
-
-    Returns
-    -------
-    DoP : np.ndarray
-        DoP ∈ [0, 1]
+    Examples
+    --------
+    >>> pa.stokes_to_dop([1.0, 0.0, 0.0, 0.0])  # Unpolarized light
+    0.0
+    >>> pa.stokes_to_dop([1.0, 1.0, 0.0, 0.0])  # Fully linear polarized light
+    1.0
+    >>> pa.stokes_to_dop([1.0, 0.0, 0.0, 1.0])  # Fully circularly polarized light
+    1.0
+    >>> pa.stokes_to_dop([1.0, 0.5, 0.5, 0.5])  # Partially polarized light
+    0.866
     """
     stokes = _movelastaxis(stokes, axis)
     s0 = stokes[..., 0]
@@ -277,20 +277,34 @@ def cvtStokesToDoP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
     return np.sqrt(s1**2 + s2**2 + s3**2) / s0
 
 
-def cvtStokesToEllipticityAngle(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to ellipticity angle
+def stokes_to_eang(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
+    """Convert Stokes vector to ellipticity angle.
+
+    .. math::
+        \\text{Ellipticity Angle} = \\frac{1}{2} \\tan^{-1} \\left( \\frac{s_3}{\\sqrt{s_1^2 + s_2^2}} \\right).
 
     Parameters
     ----------
-    stokes : np.ndarray
-        Stokes parameters
+    stokes : array_like, (..., 4)
+        Stokes vector.
     axis : int, optional
-        Axis of the stokes channel, by default -1
+        Axis of the stokes channel, by default -1.
 
     Returns
     -------
-    EllipticityAngle : np.ndarray
-        ellipticity angle ∈ [-pi/4, pi/4]
+    enag : ndarray, (...)
+        ellipticity angle [-pi/4, pi/4].
+
+    Examples
+    --------
+    >>> pa.stokes_to_eang([1.0, 1.0, 0.0, 0.0])  # Linear horizontal polarization
+    0.0
+    >>> pa.stokes_to_eang([1.0, 0.0, 1.0, 0.0])  # Linear +45 degree polarization
+    0.0
+    >>> pa.stokes_to_eang([1.0, 0.0, 0.0, 1.0])  # Right circular polarization
+    0.785
+    >>> pa.stokes_to_eang([1.0, 0.0, 0.0, -1.0])  # Left circular polarization
+    -0.785
     """
     stokes = _movelastaxis(stokes, axis)
     s1 = stokes[..., 1]
@@ -299,20 +313,34 @@ def cvtStokesToEllipticityAngle(stokes: np.ndarray, axis: int = -1) -> np.ndarra
     return 0.5 * np.arctan2(s3, np.sqrt(s1**2 + s2**2))
 
 
-def cvtStokesToDoCP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
-    """Convert stokes parameters to DoCP (Degree of Circular Polarization)
+def stokes_to_docp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
+    """Convert Stokes vector to DoCP (Degree of Circular Polarization).
+
+    .. math::
+        \\text{DoCP} = \\frac{|s_3|}{s_0}.
 
     Parameters
     ----------
-    stokes : np.ndarray
-        Stokes parameters
+    stokes : array_like, (..., 4)
+        Stokes vector.
     axis : int, optional
-        Axis of the stokes channel, by default -1
+        Axis of the stokes channel, by default -1.
 
     Returns
     -------
-    DoCP : np.ndarray
-        DoCP ∈ [0, 1]
+    docp : ndarray, (...)
+        DoCP [0, 1].
+
+    Examples
+    --------
+    >>> pa.stokes_to_docp([1.0, 0.0, 0.0, 0.0])  # Unpolarized light
+    0.0
+    >>> pa.stokes_to_docp([1.0, 1.0, 0.0, 0.0])  # Fully linear polarized light
+    0.0
+    >>> pa.stokes_to_docp([1.0, 0.0, 0.0, 1.0])  # Fully circularly polarized light
+    1.0
+    >>> pa.stokes_to_docp([1.0, 0.5, 0.5, 0.5])  # Partially polarized light
+    0.5
     """
     stokes = _movelastaxis(stokes, axis)
     s0 = stokes[..., 0]
@@ -321,11 +349,14 @@ def cvtStokesToDoCP(stokes: np.ndarray, axis: int = -1) -> np.ndarray:
 
 
 def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.ndarray:
-    """Check if the Stokes vector is physically valid.
+    """Check if Stokes vector is physically valid.
+
+    1. The intensity should be non-negative: :math:`s_0 \\geq 0`.
+    2. The DoP should be smaller than or equal to 1: :math:`\\sqrt{s_1^2 + s_2^2 + s_3^2} \\leq s_0`.
 
     Parameters
     ----------
-    stokes : (..., 4) array_like
+    stokes : array_like, (..., 4)
         Stokes vector.
     atol : float, optional
         Absolute tolerance, by default 1.0e-8.
@@ -334,7 +365,7 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
 
     Returns
     -------
-    is_valid : (..., ) array
+    is_valid : ndarray, (..., )
         This is scalar if the input is a single Stokes vector, and an array of booleans if the input is a stack of Stokes vectors.
 
     Examples
@@ -345,8 +376,9 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
     True
     >>> pa.isstokes([1.0, 1.01, 0.0, 0.0])
     False
+    >>> pa.isstokes([[1.0, 0.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0], [1.0, 1.01, 0.0, 0.0]])
+    [ True  True False]
     """
-    stokes = np.asarray(stokes)
     stokes = _movelastaxis(stokes, axis)
     s0 = stokes[..., 0]
     s1 = stokes[..., 1]
