@@ -1,97 +1,102 @@
 import numpy as np
+import numpy.typing as npt
+
+from .stokes import stokes as stokes_from_params
 
 
-def _stokes(rng, s0=1.0, dop=None, aolp=None, ellipticity_angle=None, size=None):
-    if size == None:
+def _random_stokes(rng, s0=None, dop=None, aolp=None, eang=None, size=None):
+    """Shared implementation for random.stokes and PolarizationGenerator.stokes."""
+    if size is None:
         size = ()
 
-    # Randomly generate values if not provided
+    if s0 is None:
+        s0 = rng.uniform(0, 1, size)
+
     if dop is None:
         dop = rng.uniform(0, 1, size)
 
     if aolp is None:
         aolp = rng.uniform(0, np.pi, size)
 
-    if ellipticity_angle is None:
-        # Apply arcsin to make the distribution uniform
-        ellipticity_angle = 0.5 * np.arcsin(1 - 2 * rng.uniform(0, 1, size))
+    if eang is None:
+        # The arcsin makes the distribution uniform
+        eang = 0.5 * np.arcsin(1 - 2 * rng.uniform(0, 1, size))
 
-    # Check input values
-    if np.any(np.logical_or(dop < 0, 1 < dop)):
-        raise ValueError("DoP must be in the range [0, 1]")
-
-    if np.any(np.logical_or(ellipticity_angle < -np.pi / 4, np.pi / 4 < ellipticity_angle)):
-        raise ValueError("Ellipticity angle must be in the range [-pi/4, pi/4]")
-
-    if np.any(s0 < 0):
-        raise ValueError("Intensity must be non-negative")
-
-    s0 = np.broadcast_to(s0, size)
-    s1 = s0 * dop * np.cos(2 * aolp) * np.cos(2 * ellipticity_angle)
-    s2 = s0 * dop * np.sin(2 * aolp) * np.cos(2 * ellipticity_angle)
-    s3 = s0 * dop * np.sin(2 * ellipticity_angle)
-    return np.stack((s0, s1, s2, s3), axis=-1)
+    return stokes_from_params(s0=s0, dop=dop, aolp=aolp, eang=eang)
 
 
-def stokes(s0=1.0, dop=None, aolp=None, ellipticity_angle=None, size=None):
-    """Randomly generate Stokes vector
+def stokes(
+    s0: npt.ArrayLike | None = 1.0,
+    dop: npt.ArrayLike | None = None,
+    aolp: npt.ArrayLike | None = None,
+    eang: npt.ArrayLike | None = None,
+    size: int | tuple[int, ...] | None = None,
+) -> np.ndarray:
+    """Randomly generate Stokes vector.
 
     Parameters
     ----------
     s0 : float or array_like, optional
-        Intensity of the light. [0, inf). If None, set to 1.
+        Intensity of the light, in [0, inf). Defaults to 1.0.
+        If None, generate random intensity [0, 1).
     dop : float or array_like, optional
         Degree of polarization. [0, 1]. If None, generate random DoP.
     aolp : float or array_like, optional
         Angle of linear polarization. [0, pi]. If None, generate random AoLP.
-    ellipticity_angle : float or array_like, optional
-        Angle of ellipticity. [-pi/4, pi/4]. If None, generate random ellipticity angle.
+    eang : float or array_like, optional
+        Ellipticity angle. [-pi/4, pi/4]. If None, generate random ellipticity angle.
     size : int or tuple of ints, optional
         Output shape. If None, return a single Stokes vector.
 
     Returns
     -------
-    s : array_like
+    stokes : ndarray, (*size, 4)
         Stokes vector. Shape is determined by broadcasting the input arguments.
 
     Examples
     --------
-    >>> s = pa.random.stokes()
-    [ 1.         -0.3516055  -0.26569391 -0.63323679]  # Random Stokes vector
-    >>> pa.random.stokes(size=(3,)) # (3, 4)
-    [[ 1.00000000e+00 -5.91476157e-03 -4.15714440e-04  7.75093548e-02]
-     [ 1.00000000e+00  1.47797617e-01 -1.20648980e-01  4.07038091e-02]
-     [ 1.00000000e+00 -4.35252249e-02  1.29371584e-02 -9.43606086e-01]] # Random Stokes vectors (array)
+    Generate a single random Stokes vector.
 
-    Fix DoP
+    >>> pa.random.stokes()
+    [ 1.         -0.3516055  -0.26569391 -0.63323679]
 
-    >>> s = pa.random.stokes(dop=0.5, size=(5))
-    >>> pa.cvtStokesToDoP(s)
+    Generate multiple random Stokes vectors.
+
+    >>> pa.random.stokes(size=3) # (3, 4)
+    [[ 1.          0.10098732  0.0643837   0.38024539]
+     [ 1.          0.85911994  0.4263879  -0.23704069]
+     [ 1.          0.09153383 -0.11594401 -0.41531663]]
+    >>> pa.random.stokes(size=(512, 1024))  # (512, 1024, 4)
+
+    Generate random Stokes vectors with specified DoP=0.5.
+
+    >>> s = pa.random.stokes(dop=0.5, size=5)
+    >>> pa.stokes_to_dop(s)
     [0.5 0.5 0.5 0.5 0.5]
-    >>> pa.cvtStokesToAoLP(s)
-    [0.06065768 0.60803243 2.43605145 2.49862427 0.8271829 ]  # Random AoLP
-    >>> pa.cvtStokesToEllipticityAngle(s)
-    [ 0.22203514  0.55317095  0.52020158 -0.62225768  0.48007445]  # Random ellipticity angle
+    >>> pa.stokes_to_aolp(s)
+    [0.06065768 0.60803243 2.43605145 2.49862427 0.8271829 ]
+    >>> pa.stokes_to_eang(s)
+    [ 0.22203514  0.55317095  0.52020158 -0.62225768  0.48007445]
 
-    Fix DoP and AoLP
+    Generate random Stokes vectors with specified DoP=0.5 and AoLP=0.1.
 
-    >>> s = pa.random.stokes(dop=0.5, aolp=0.1, size=(5))
-    >>> pa.cvtStokesToDoP(s)
+    >>> s = pa.random.stokes(dop=0.5, aolp=0.1, size=5)
+    >>> pa.stokes_to_dop(s)
     [0.5 0.5 0.5 0.5 0.5]
-    >>> pa.cvtStokesToAoLP(s)
+    >>> pa.stokes_to_aolp(s)
     [0.1 0.1 0.1 0.1 0.1]
-    >>> pa.cvtStokesToEllipticityAngle(s)
-    [-0.0908445  -0.62325593 -0.14761242 -0.65347546  0.76911759]  # Random ellipticity angle
+    >>> pa.stokes_to_eang(s)
+    [-0.0908445  -0.62325593 -0.14761242 -0.65347546  0.76911759]
     """
-    return _stokes(np.random, s0, dop, aolp, ellipticity_angle, size)
+    return _random_stokes(np.random, s0, dop, aolp, eang, size)
 
 
 class PolarizationGenerator(np.random.Generator):
     def __init__(self, bit_generator: np.random.BitGenerator):
         super().__init__(bit_generator)
 
-    def stokes(self, s0=1.0, dop=None, aolp=None, ellipticity_angle=None, size=None):
-        return _stokes(self, s0, dop, aolp, ellipticity_angle, size)
+    def stokes(self, s0=1.0, dop=None, aolp=None, eang=None, size=None):
+        return _random_stokes(self, s0, dop, aolp, eang, size)
 
 
 def default_rng(seed=None) -> PolarizationGenerator:
