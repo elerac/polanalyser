@@ -1,6 +1,4 @@
-from sympy import symbols
-from sympy import atan, sqrt, Abs
-from sympy import Matrix
+from sympy import Abs, Matrix, atan, sqrt, symbols
 
 
 def stokes(symbol="s"):
@@ -8,31 +6,26 @@ def stokes(symbol="s"):
     return Matrix([s0, s1, s2, s3])
 
 
-def cvtStokesToAoLP(stokes):
+def stokes_to_aolp(stokes):
     s0, s1, s2, s3 = stokes
     return 0.5 * atan(s2 / s1)
 
 
-def cvtStokesToIntensity(stokes):
-    s0, s1, s2, s3 = stokes
-    return s0
-
-
-def cvtStokesToDoLP(stokes):
+def stokes_to_dolp(stokes):
     s0, s1, s2, s3 = stokes
     return sqrt(s1**2 + s2**2) / s0
 
 
-def cvtStokesToDoCP(stokes):
+def stokes_to_docp(stokes):
     s0, s1, s2, s3 = stokes
     return Abs(s3) / s0
 
 
-def cvtStokesToDoP(stokes):
+def stokes_to_dop(stokes):
     s0, s1, s2, s3 = stokes
     return sqrt(s1**2 + s2**2 + s3**2) / s0
 
 
-def cvtStokesToEllipticityAngle(stokes):
+def stokes_to_eang(stokes):
     s0, s1, s2, s3 = stokes
     return 0.5 * atan(s3 / sqrt(s1**2 + s2**2))
