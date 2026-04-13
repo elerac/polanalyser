@@ -15,7 +15,6 @@ from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
-import OpenImageIO as oiio
 
 STOKES_ORDER = ("S0", "S1", "S2", "S3")
 COLOR_ORDER = ("B", "G", "R")
@@ -36,6 +35,8 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
         Array of shape ``(H, W, 3, 4)`` containing BGR color planes stacked along
         the third axis and Stokes components ``(S0, S1, S2, S3)`` along the fourth.
     """
+    import OpenImageIO as oiio
+
     filename = str(filename)
 
     # Read full image and metadata once; channel mapping is resolved below.
@@ -87,6 +88,8 @@ def imwrite_stokes(filename: str | Path, img_bgr_stokes: npt.NDArray[np.float32]
     """
     if img_bgr_stokes.ndim != 4 or img_bgr_stokes.shape[2:] != (len(COLOR_ORDER), len(STOKES_ORDER)):
         raise ValueError("img_bgr_stokes must have shape (H, W, 3, 4)")
+
+    import OpenImageIO as oiio
 
     height, width = img_bgr_stokes.shape[:2]
     stokes_lookup = {name: idx for idx, name in enumerate(STOKES_ORDER)}
