@@ -62,8 +62,8 @@ def stokes(s0: npt.ArrayLike, dop: npt.ArrayLike, aolp: npt.ArrayLike, eang: npt
     return np.stack([s0, s1, s2, s3], axis=-1)
 
 
-def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
-    """Calculate stokes parameters from measured intensities and mueller matrices
+def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
+    """Estimate stokes parameters from measured intensities and mueller matrices
 
     Parameters
     ----------
@@ -118,7 +118,7 @@ def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarra
     # If the shape of `muellers` is a 1D array (each element is scalar), this function treats `muellers` as the angles of a linear polarizer.
     if muellers.ndim == 1:
         polarizer_angles = muellers
-        return calcLinearStokes(intensities, polarizer_angles)
+        return estimate_linear_stokes(intensities, polarizer_angles)
 
     # Check the number of elements
     if len(intensities) != len(muellers):
@@ -140,8 +140,8 @@ def calcStokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarra
     return stokes
 
 
-def calcLinearStokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike) -> np.ndarray:
-    """Calculate only linear polarization stokes parameters from measured intensities and linear polarizer angle
+def estimate_linear_stokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike) -> np.ndarray:
+    """Estimate linear polarization stokes parameters from measured intensities and linear polarizer angle
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ def calcLinearStokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike
         Calculated stokes parameters
     """
     muellers = [mueller.polarizer(angle)[:3, :3] for angle in polarizer_angles]
-    return calcStokes(intensities, muellers)
+    return estimate_stokes(intensities, muellers)
 
 
 def _movelastaxis(a: npt.ArrayLike, source: int) -> np.ndarray:

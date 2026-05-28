@@ -64,8 +64,8 @@ def _broadcast_mueller(entries: Sequence[Sequence[npt.ArrayLike]]) -> np.ndarray
     return np.moveaxis(grid, (0, 1), (-2, -1))
 
 
-def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.ArrayLike) -> np.ndarray:
-    """Calculate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
+def estimate_mueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.ArrayLike) -> np.ndarray:
+    """Estimate Mueller matrix from measured intensities and Mueller matrices of Polarization State Generator (PSG) and Polarization State Analyzer (PSA)
 
     This function calculates Mueller matrix image from intensity images captured under a variety of polarimetric conditions (both PSG and PSA).
     Polarimetric conditions are specified by the Mueller matrices (`mm_psg` and `mm_psa`).
