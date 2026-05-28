@@ -34,7 +34,6 @@ References
 """
 
 import numpy as np
-from scipy import ndimage
 
 BAYER_PATTERNS = ("rggb", "grbg", "gbrg", "bggr")
 DEFAULT_SIGMA = 1.0
@@ -59,6 +58,8 @@ def demosaicing_color_igri2(img_cpfa: np.ndarray) -> list[np.ndarray]:
 
 def imfilter(src: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """MATLAB imfilter(..., 'replicate') with correlation semantics."""
+    from scipy import ndimage
+
     src = np.asarray(src, dtype=np.float64)
     kernel = np.asarray(kernel, dtype=np.float64)
     if kernel.ndim == 1:
