@@ -1,4 +1,4 @@
-from sympy import Abs, Matrix, atan, sqrt, symbols
+from sympy import Abs, Eq, Matrix, Mod, Piecewise, atan2, pi, sqrt, symbols
 
 
 def stokes(symbol="s"):
@@ -8,7 +8,8 @@ def stokes(symbol="s"):
 
 def stokes_to_aolp(stokes):
     s0, s1, s2, s3 = stokes
-    return 0.5 * atan(s2 / s1)
+    aolp = Mod(0.5 * atan2(s2, s1), pi)
+    return Piecewise((0, Eq(s1, 0) & Eq(s2, 0)), (aolp, True))
 
 
 def stokes_to_dolp(stokes):
@@ -28,4 +29,5 @@ def stokes_to_dop(stokes):
 
 def stokes_to_eang(stokes):
     s0, s1, s2, s3 = stokes
-    return 0.5 * atan(s3 / sqrt(s1**2 + s2**2))
+    eang = 0.5 * atan2(s3, sqrt(s1**2 + s2**2))
+    return Piecewise((0, Eq(s1, 0) & Eq(s2, 0) & Eq(s3, 0)), (eang, True))
