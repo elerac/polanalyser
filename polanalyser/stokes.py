@@ -348,7 +348,7 @@ def stokes_to_docp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
     return np.abs(s3) / s0
 
 
-def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.ndarray:
+def isstokes(stokes: npt.ArrayLike, *, rtol: float = 1.0e-5, atol: float = 0.0, axis: int = -1) -> np.ndarray:
     """Check if Stokes vector is physically valid.
 
     1. The intensity should be non-negative: :math:`s_0 \\geq 0`.
@@ -356,10 +356,12 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
 
     Parameters
     ----------
-    stokes : array_like, (..., 4)
+    stokes : array_like, (..., 3) or (..., 4)
         Stokes vector.
+    rtol : float, optional
+        Relative tolerance for the polarization boundary, by default 1.0e-5.
     atol : float, optional
-        Absolute tolerance, by default 1.0e-8.
+        Absolute tolerance for the polarization boundary, by default 0.0.
     axis : int, optional
         The axis that contains the Stokes vectors, by default -1.
 
@@ -379,19 +381,27 @@ def isstokes(stokes: npt.ArrayLike, atol: float = 1.0e-8, axis: int = -1) -> np.
     >>> pa.isstokes([[1.0, 0.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0], [1.0, 1.01, 0.0, 0.0]])
     [ True  True False]
     """
+    if rtol < 0:
+        raise ValueError("Relative tolerance (rtol) must be non-negative")
+    if atol < 0:
+        raise ValueError("Absolute tolerance (atol) must be non-negative")
+
     stokes = _movelastaxis(stokes, axis)
+    if stokes.shape[-1] not in (3, 4):
+        raise ValueError(f"Invalid shape: {stokes.shape}. Expected a Stokes axis with 3 or 4 components.")
+
     s0 = stokes[..., 0]
-    s1 = stokes[..., 1]
-    s2 = stokes[..., 2]
-    s3 = stokes[..., 3]
+    p = np.linalg.norm(stokes[..., 1:], axis=-1)
 
     # The intensity should be non-negative
     # s0 >= 0
     is_valid_intensity = s0 >= 0
 
-    # The DoP should be smaller than 1
-    # (s0**2 - (s1**2 + s2**2 + s3**2)) >= 0
-    # but allow a small negative value due to numerical errors
-    is_valid_dop = (s0**2 - (s1**2 + s2**2 + s3**2)) >= -abs(atol)
+    # The polarization magnitude should not exceed the intensity, except for
+    # numerical boundary error scaled in intensity units.
+    is_valid_polarization = p <= s0 + atol + rtol * np.abs(s0)
 
-    return np.bitwise_and(is_valid_intensity, is_valid_dop)
+    # NaN and inf cannot represent physical Stokes vectors.
+    is_finite = np.all(np.isfinite(stokes), axis=-1)
+
+    return is_finite & is_valid_intensity & is_valid_polarization
