@@ -193,6 +193,198 @@ def retardance_vector(M_R: npt.ArrayLike) -> np.ndarray:
 
 
 
+def lu_chipman_decompose(M: npt.ArrayLike) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Decompose Mueller matrix with Lu-Chipman decomposition method.
+
+    Lu-Chipman decomposition method (1996) [1]_ decomposes a Mueller matrix :math:`\\mathbf{M}`
+    into depolarization :math:`\\mathbf{M}_\\Delta`, retardance :math:`\\mathbf{M}_R` , and diattenuation :math:`\\mathbf{M}_D` components as
+
+    .. math::
+        \\mathbf{M} = \\mathbf{M}_\\Delta \\cdot \\mathbf{M}_R \\cdot \\mathbf{M}_D.
+
+    Parameters
+    ----------
+    M : array_like (..., 4, 4)
+        Mueller matrix.
+
+    Returns
+    -------
+    M_Delta : np.ndarray (..., 4, 4)
+        Depolarization Mueller matrix.
+    M_R : np.ndarray (..., 4, 4)
+        Retardance Mueller matrix.
+    M_D : np.ndarray (..., 4, 4)
+        Diattenuation Mueller matrix.
+
+    References
+    ----------
+    .. [1] Shih-Yau Lu and Russell A Chipman. Interpretation of Mueller matrices based on polar decomposition. Journal of the Optical Society of America A (JOSA A) 13, 5 (1996), 1106-1113.
+
+    Examples
+    --------
+    Compose a Mueller matrix.
+
+    >>> M_Delta = pa.depolarizer([0.9, 0.8, 0.7])
+    >>> M_R = pa.retarder(np.deg2rad(20), np.deg2rad(30))
+    >>> M_D = pa.diattenuator([0.3, 0.2, 0.1])
+    >>> M = M_Delta @ M_R @ M_D  # (4, 4)
+
+    Decompose the Mueller matrix with Lu-Chipman method.
+
+    >>> M_Delta_dec, M_R_dec, M_D_dec = pa.lu_chipman_decompose(M)
+
+    Verify the decomposition.
+
+    >>> np.allclose(M_Delta, M_Delta_dec)
+    True
+    >>> np.allclose(M_R, M_R_dec)
+    True
+    >>> np.allclose(M_D, M_D_dec)
+    True
+    """
+    # References of the variable names
+    # --------------------------------
+    # M_Delta: Depolarizer Mueller matrix (Eq.(46))
+    # M_R: Retardance Mueller matrix (Eq.(14))
+    # M_D: Diattenuation Mueller matrix (Eq.(18))
+    # D: Diattenuation (Eq.(1))
+    # D_vec: Diattenuation vector (Eq.(2))
+    # R: Retardance (Eq.(10))
+    # R_vec: Retardance vector (Eq.(8))
+    # P: Polarizance (Eq.(31))
+    # P_vec: Polarizance vector (Eq.(32))
+    # m_Delta: 3x3 submatrix of M_Delta (Eq.(52))
+    # m_R: 3x3 submatrix of M_R (Eq.(15))
+    # m_D: 3x3 submatrix of M_D (Eq.(19))
+
+    M = np.asarray(M)
+    if M.shape[-2:] != (4, 4):
+        raise ValueError(f"Invalid shape: {M.shape}. Expected (..., 4, 4).")
+
+    dtype = M.dtype
+    I3 = np.eye(3, dtype=dtype)
+    shape = M.shape[:-2]
+
+    # Flatten batch
+    M_flat = M.reshape(-1, 4, 4)  # (N, 4, 4)
+    N = M_flat.shape[0]
+    m00 = M_flat[:, 0, 0]  # (N,)
+
+    # Diattenuation (Eqs. (1),(2),(18),(19),(28))
+    D_vec = 1 / m00[:, None] * M_flat[:, 0, 1:]
+    D = np.linalg.norm(D_vec, axis=-1)
+    D = np.clip(D, 0.0, 1.0)  # Avoid numerical errors
+    D_hat = _normalize(D_vec, norm=D)
+
+    sqrt1_D2 = np.sqrt(1.0 - D**2)[:, None, None]
+    D_hat_outer = np.einsum("ni,nj->nij", D_hat, D_hat)
+    m_D = sqrt1_D2 * I3 + (1.0 - sqrt1_D2) * D_hat_outer
+
+    M_D = np.empty((N, 4, 4), dtype=dtype)
+    M_D[:, 0, 0] = 1
+    M_D[:, 0, 1:] = D_vec
+    M_D[:, 1:, 0] = D_vec
+    M_D[:, 1:, 1:] = m_D
+    M_D *= m00[:, None, None]
+
+    # Polarizance (Eqs. (31),(32))
+    P_vec = 1 / m00[:, None] * M_flat[:, 1:, 0]
+    P = np.linalg.norm(P_vec, axis=-1)
+    P_hat = _normalize(P_vec, norm=P)
+
+    # Check singularity of M_D (D == 1)
+    singular = np.isclose(D, 1.0)
+    nonsingular = ~singular
+
+    M_Delta = np.empty((N, 4, 4), dtype=dtype)
+    M_R = np.empty((N, 4, 4), dtype=dtype)
+
+    # Non-singular branch (Section 7)
+    if nonsingular.any():
+        idx = nonsingular
+        N_nonsingular = np.sum(idx)
+        M_ = M_flat[idx]
+        M_D_ = M_D[idx]
+        m00_ = m00[idx]
+        D_vec_ = D_vec[idx]
+        D_ = D[idx]
+        P_vec_ = P_vec[idx]
+
+        # M' = M @ inv(M_D) (Eq. 47)
+        M_prime_ = np.linalg.solve(np.swapaxes(M_D_, -1, -2), np.swapaxes(M_, -1, -2))
+        M_prime_ = np.swapaxes(M_prime_, -1, -2)
+
+        # 3x3 submatrix of M
+        m_ = M_[:, 1:, 1:] / m00_[:, None, None]
+
+        # Polarizance vector of the depolarizer (Eq. 50)
+        P_Delta_vec_ = (P_vec_ - np.einsum("nij,nj->ni", m_, D_vec_)) / (1.0 - D_**2)[:, None]
+
+        # 3x3 submatrix of M' (Eqs. 48, 51)
+        m_prime_ = M_prime_[:, 1:, 1:]
+
+        # m'(m'T)
+        m_prime_m_prime_T_ = np.einsum("nij,nkj->nik", m_prime_, m_prime_)
+
+        # Eigenvalues of m'(m'T)
+        lam = np.linalg.eigvalsh(m_prime_m_prime_T_)  # Use eigvalsh for real symmetric PSD
+        lam = np.clip(lam, 0.0, None)  # Avoid numerical errors
+        l1, l2, l3 = lam[:, 0], lam[:, 1], lam[:, 2]
+
+        # 3x3 submatrix of M_Delta (Eq. 52)
+        s12 = np.sqrt(l1 * l2)
+        s23 = np.sqrt(l2 * l3)
+        s31 = np.sqrt(l3 * l1)
+        s_sum = np.sqrt(l1) + np.sqrt(l2) + np.sqrt(l3)
+        s_prod = np.sqrt(l1 * l2 * l3)
+        A = m_prime_m_prime_T_ + (s12 + s23 + s31)[:, None, None] * I3
+        B = (s_sum)[:, None, None] * m_prime_m_prime_T_ + (s_prod)[:, None, None] * I3
+        m_Delta_ = np.linalg.solve(A, B)  # inv(A) @ B
+        m_Delta_ *= np.sign(np.linalg.det(m_Delta_))[:, None, None]
+
+        # M_Delta (Eq. 48)
+        M_Delta_ = np.zeros((N_nonsingular, 4, 4), dtype=dtype)
+        M_Delta_[:, 0, 0] = 1
+        M_Delta_[:, 0, 1:] = 0
+        M_Delta_[:, 1:, 0] = P_Delta_vec_
+        M_Delta_[:, 1:, 1:] = m_Delta_
+
+        # M_R (Eq. 53)
+        M_R_ = np.linalg.solve(M_Delta_, M_prime_)  # inv(M_Delta) @ M'
+
+        M_Delta[idx] = M_Delta_
+        M_R[idx] = M_R_
+
+    # Singular branch (Appendix A)
+    if singular.any():
+        idx = singular
+        N_singular = np.sum(idx)
+        P_ = P[idx]
+        P_hat_ = P_hat[idx]
+        D_vec_ = D_vec[idx]
+
+        # M_Delta for singular case (Eq. A3)
+        M_Delta_ = np.zeros((N_singular, 4, 4), dtype=dtype)
+        M_Delta_[:, 0, 0] = 1
+        M_Delta_[:, 1:, 1:] = P_[:, None, None] * I3
+
+        # M_R for singular case (Eq. A4)
+        cos_arg = np.einsum("ni,ni->n", P_hat_, D_vec_).clip(-1.0, 1.0)
+        R_axis = np.cross(P_hat_, D_vec_)
+        R_vec = _normalize(R_axis) * np.arccos(cos_arg)[:, None]
+        M_R_ = retardance_matrix(R_vec)  # Eqs. 14, 15
+
+        M_Delta[idx] = M_Delta_
+        M_R[idx] = M_R_
+
+    # Restore original batch shape
+    M_Delta = M_Delta.reshape(*shape, 4, 4)
+    M_R = M_R.reshape(*shape, 4, 4)
+    M_D = M_D.reshape(*shape, 4, 4)
+
+    return M_Delta, M_R, M_D
+
+
 def rotator(theta: npt.ArrayLike) -> np.ndarray:
     """Mueller matrix of the rotator
 
