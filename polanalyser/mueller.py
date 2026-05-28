@@ -1,7 +1,67 @@
+from typing import Sequence, overload
+
 import numpy as np
 import numpy.typing as npt
-from . import random
-from . import stokes
+
+from . import random, stokes
+
+
+def _broadcast_mueller(entries: Sequence[Sequence[npt.ArrayLike]]) -> np.ndarray:
+    """Build a broadcasted Mueller matrix from a readable 4x4 grid of entries.
+
+    This helper supports a convenient way to write a Mueller matrix as a nested
+    4x4 container whose entries may be scalars or array-like objects. All 16
+    entries are broadcast to a common batch shape and then arranged into a single
+    numeric array with trailing Mueller-matrix axes. This keeps the physical
+    matrix layout visible in constructors such as polarizers, retarders, and
+    depolarizers, while still allowing batched inputs such as image-shaped
+    parameters.
+
+    Unlike ``np.array(entries)``, which may fail or produce an object array when
+    entries have different but broadcast-compatible shapes, this function applies
+    NumPy broadcasting entry-wise before assembling the final array.
+
+    Parameters
+    ----------
+    entries : Sequence[Sequence[npt.ArrayLike]]
+        A 4x4 nested sequence of broadcast-compatible Mueller matrix entries.
+        Each entry may be a scalar or an array-like object with batch dimensions.
+
+    Returns
+    -------
+    mueller : ndarray, shape (..., 4, 4)
+        Numeric Mueller matrix array. The leading axes are the broadcasted batch
+        shape, and the last two axes index the Mueller matrix rows and columns.
+
+    Examples
+    --------
+    Build a Mueller matrix with a common image batch shape ``(H, W)`` while keeping
+    the readable 4x4 matrix layout.
+
+    >>> H, W = 100, 200
+    >>> d1 = np.random.rand(H, W)
+    >>> d2 = np.random.rand(H, W)
+    >>> d3 = np.random.rand(H, W)
+    >>> M = __broadcast_mueller(
+    ...     [
+    ...         [1.0, 0.0, 0.0, 0.0],
+    ...         [0.0,  d1, 0.0, 0.0],
+    ...         [0.0, 0.0,  d2, 0.0],
+    ...         [0.0, 0.0, 0.0,  d3],
+    ...     ]
+    ... )
+    >>> M.shape
+    (100, 200, 4, 4)
+    """
+    rows = [list(row) for row in entries]
+    if len(rows) != 4 or any(len(row) != 4 for row in rows):
+        raise ValueError("Expected a 4x4 nested sequence of Mueller entries.")
+
+    flat = [np.asarray(x) for row in rows for x in row]
+    b = np.broadcast_arrays(*flat)
+    grid = np.array(b, dtype=np.result_type(*b))
+    grid = grid.reshape(4, 4, *b[0].shape)
+    return np.moveaxis(grid, (0, 1), (-2, -1))
 
 
 def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.ArrayLike) -> np.ndarray:
@@ -88,47 +148,37 @@ def calcMueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: npt.A
     return mueller
 
 
-def retardance_vector(M_R: np.ndarray) -> np.ndarray:
-    """Extract retardance vector from retardance Mueller matrix.
+def _normalize(vec, norm=None):
+    """Normalize a vector to unit length"""
+    # vec: (..., 3)
+    if norm is None:
+        norm = np.linalg.norm(vec, axis=-1, keepdims=True)
+    if norm.ndim == vec.ndim - 1:
+        norm = norm[..., None]
+    return np.divide(vec, norm, out=np.zeros_like(vec), where=(norm != 0))
 
-    The equations are based on the paper by Lu and Chipman [1]_.
+
+def retardance_vector(M_R: npt.ArrayLike) -> np.ndarray:
+    """Convert retardance Mueller matrix to retardance vector
+
+    The equations are based on the paper by Lu and Chipman (1996).
 
     Parameters
     ----------
-    M_R : array (..., 4, 4)
+    M_R : array-like (..., 4, 4)
         Retardance Mueller matrix. If the matrix is not a retardance matrix, the result would be incorrect.
 
     Returns
     -------
     R_vec: array (..., 3)
         Retardance vector (..., 3)
-
-    References
-    ----------
-    .. [1] Shih-Yau Lu and Russell A Chipman. Interpretation of Mueller matrices based on polar decomposition. Journal of the Optical Society of America A (JOSA A) 13, 5 (1996), 1106-1113.
-
-    Examples
-    --------
-    Extract retardance vector from retardance Mueller matrix.
-
-    >>> delta = np.deg2rad(20)
-    >>> theta = np.deg2rad(30)
-    >>> M_R = pa.retarder(delta, theta)  # (4, 4)
-    >>> retardance_vec = pa.retardance_vector(M_R) # (3,)
-
-    Convert retardance vector to delta and theta.
-
-    >>> delta_ = np.linalg.norm(retardance_vec, axis=-1)
-    >>> theta_ = np.arctan2(retardance_vec[1], retardance_vec[0]) / 2
-    >>> np.allclose(delta, delta_)
-    True
-    >>> np.allclose(theta, theta_)
-    True
     """
+    M_R = np.asarray(M_R)
+    M_R = np.asarray(M_R, dtype=np.promote_types(np.float32, M_R.dtype))
     if M_R.shape[-2:] != (4, 4):
         raise ValueError(f"Invalid shape: {M_R.shape}. Expected (..., 4, 4).")
 
-    R = np.arccos(np.trace(M_R, axis1=-2, axis2=-1) / 2 - 1)  # Eq. (17)
+    R = np.arccos(np.clip(np.trace(M_R, axis1=-2, axis2=-1) / 2 - 1, -1.0, 1.0))  # Eq. (17)
     levi_civita_ijk = np.array(
         [
             [[0, 0, 0], [0, 0, 1], [0, -1, 0]],
@@ -142,132 +192,226 @@ def retardance_vector(M_R: np.ndarray) -> np.ndarray:
     return R_vec
 
 
-def rotator(theta: float) -> np.ndarray:
-    """Generate Mueller matrix of rotation
+
+def rotator(theta: npt.ArrayLike) -> np.ndarray:
+    """Mueller matrix of the rotator
 
     Parameters
     ----------
-    theta : float
+    theta : array-like, (...,)
         The angle of rotation
 
     Returns
     -------
-    mueller : np.ndarray
-        Mueller matrix (4, 4)
+    mueller : np.ndarray, (..., 4, 4)
+        Mueller matrix.
     """
-    s = np.sin(2 * theta)
-    c = np.cos(2 * theta)
-    return np.array([[1, 0, 0, 0], [0, c, s, 0], [0, -s, c, 0], [0, 0, 0, 1]])
+    theta = np.asarray(theta)
+    s = np.sin(2.0 * theta)
+    c = np.cos(2.0 * theta)
+    return _broadcast_mueller(
+        [
+            [1, 0, 0, 0],
+            [0, c, s, 0],
+            [0, -s, c, 0],
+            [0, 0, 0, 1],
+        ]
+    )
 
 
-def rotateMueller(mueller: np.ndarray, theta: float) -> np.ndarray:
+def rotateMueller(mueller: npt.ArrayLike, theta: npt.ArrayLike) -> np.ndarray:
     """Rotate Mueller matrix
 
     Parameters
     ----------
-    mueller : np.ndarray
-        Mueller matrix to rotate, (3, 3) or (4, 4)
-    theta : float
+    mueller : array-like, (..., 3, 3) or (..., 4, 4)
+        Mueller matrix to rotate.
+    theta : array-like, (...,)
         The angle of rotation
 
     Returns
     -------
     mueller_rotated : np.ndarray
-        Rotated mueller matrix (3, 3) or (4, 4)
+        Rotated mueller matrix (..., 3, 3) or (..., 4, 4)
     """
-    mueller_shape = mueller.shape[-2:]
-    if mueller_shape == (4, 4):
-        return rotator(-theta) @ mueller @ rotator(theta)
-    elif mueller_shape == (3, 3):
-        return rotator(-theta)[:3, :3] @ mueller @ rotator(theta)[:3, :3]
-    else:
-        raise ValueError(f"The shape of mueller matrix must be (3, 3) or (4, 4), not {mueller_shape}")
+    mueller = np.asarray(mueller)
+    theta = np.asarray(theta)
+    n_rows, n_cols = mueller.shape[-2:]
+    if n_rows != n_cols or n_rows > 4:
+        raise ValueError(f"The shape of mueller must be (..., 3, 3) or (..., 4, 4), not {mueller.shape}.")
+    return rotator(-theta)[..., :n_rows, :n_cols] @ mueller @ rotator(theta)[..., :n_rows, :n_cols]
 
 
-def polarizer(theta: float) -> np.ndarray:
-    """Generate Mueller matrix of the linear polarizer
+def polarizer(theta: npt.ArrayLike) -> np.ndarray:
+    """Mueller matrix of the linear polarizer.
 
     Parameters
     ----------
-    theta : float
-        Angle of polarizer
+    theta : array_like, (...,)
+        Rotation angle of the linear polarizer.
 
     Returns
     -------
-    mueller : np.ndarray
-        Mueller matrix, (4, 4)
+    mueller : np.ndarray, (..., 4, 4)
+        Mueller matrix of the linear polarizer.
+
+    Examples
+    --------
+    >>> pa.polarizer(np.deg2rad(0))
+    [[0.5, 0.5, 0.0, 0.0],
+     [0.5, 0.5, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 0.0]]
+    >>> pa.polarizer(np.deg2rad(45))
+    [[0.5, 0.0, 0.5, 0.0],
+     [0.0, 0.0, 0.0, 0.0],
+     [0.5, 0.0, 0.5, 0.0],
+     [0.0, 0.0, 0.0, 0.0]]
     """
-    s = np.sin(2 * theta)
-    c = np.cos(2 * theta)
-    return 0.5 * np.array([[1, c, s, 0], [c, c * c, s * c, 0], [s, s * c, s * s, 0], [0, 0, 0, 0]])
+    theta = np.asarray(theta)
+    s = np.sin(2.0 * theta)
+    c = np.cos(2.0 * theta)
+    return 0.5 * _broadcast_mueller(
+        [
+            [1, c, s, 0],
+            [c, c * c, s * c, 0],
+            [s, s * c, s * s, 0],
+            [0, 0, 0, 0],
+        ]
+    )
 
 
-def retarder(delta: float, theta: float) -> np.ndarray:
-    """Generate Mueller matrix of linear retarder
+@overload
+def retarder(delta: npt.ArrayLike, theta: npt.ArrayLike) -> np.ndarray: ...
+@overload
+def retarder(R_vec: npt.ArrayLike) -> np.ndarray: ...
+
+
+def retarder(arg0, arg1=None) -> np.ndarray:
+    """Mueller matrix of a retarder
+
+    Supports two call signatures:
+    - `retarder(delta, theta)`: linear retarder with phase delay `delta` [rad] and fast-axis angle `theta` [rad].
+    - `retarder(R_vec)`: general retarder specified by a retardance vector `R_vec` (..., 3).
 
     Parameters
     ----------
-    delta : float
-        Phase difference between the fast and slow axis
-    theta : float
-        Angle of the fast axis
-
-    Returns
-    -------
-    mueller : np.ndarray
-        Mueller matrix, (4, 4)
-    """
-    s = np.sin(delta)
-    c = np.cos(delta)
-    mueller = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
-    mueller = rotateMueller(mueller, theta)
-    return mueller
-
-
-def qwp(theta: float) -> np.ndarray:
-    """Generate Mueller matrix of Quarter-Wave Plate (QWP)
-
-    Parameters
-    ----------
-    theta : float
-        Angle of the fast axis
-
-    Returns
-    -------
-    mueller : np.ndarray
-        Mueller matrix (4, 4)
-    """
-    return retarder(np.pi / 2, theta)
-
-
-def hwp(theta: float) -> np.ndarray:
-    """Generate Mueller matrix of Half-Wave Plate (HWP)
-
-    Parameters
-    ----------
-    theta : float
-        Angle of the fast axis
-
-    Returns
-    -------
-    mueller : np.ndarray
-        Mueller matrix (4, 4)
-    """
-    return retarder(np.pi, theta)
-
-
-def depolarizer(v: npt.ArrayLike = 0.0) -> np.ndarray:
-    """Generate Mueller matrix of the depolarizer
-
-    Parameters
-    ----------
-    v : npt.ArrayLike, optional
-        Depolarization factor, Scalar or (3,), -1 <= v <= 1. If v is scalar, it is expanded to (v, v, v).
+    delta or R_vec : float or array-like, shape (..., 3) when array-like
+        If float, the phase difference between the fast and slow axis delta in radians.
+        If array-like, the retardance vector R_vec; the last axis must have length 3.
+    theta : float, optional
+        Fast-axis angle theta in radians.
 
     Returns
     -------
     np.ndarray
-        Mueller matrix, (4, 4)
+        Mueller matrix (4, 4)
+    """
+    if arg1 is not None:
+        # retarder(delta, theta)
+        delta = arg0
+        theta = arg1
+        s = np.sin(delta)
+        c = np.cos(delta)
+        mueller = _broadcast_mueller(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, c, s],
+                [0, 0, -s, c],
+            ]
+        )
+        mueller = rotateMueller(mueller, theta)
+        return mueller
+    else:
+        arg0 = np.asarray(arg0)
+        if arg0.shape[-1] != 3:
+            raise ValueError(f"Invalid shape: {arg0.shape}. Expected (..., 3).")
+
+        # retarder(R_vec)
+        R_vec = arg0
+        return retardance_matrix(R_vec)
+
+
+def qwp(theta: npt.ArrayLike) -> np.ndarray:
+    """Mueller matrix of Quarter-Wave Plate (QWP).
+
+    Parameters
+    ----------
+    theta : array_like, (...,)
+        Angle of the fast axis.
+
+    Returns
+    -------
+    mueller : np.ndarray, (..., 4, 4)
+        Mueller matrix.
+
+    Examples
+    --------
+    >>> pa.qwp(np.deg2rad(0))
+    [[1.0, 0.0, 0.0, 0.0],
+     [0.0, 1.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, 1.0],
+     [0.0, 0.0, -1.0, 0.0]]
+    >>> pa.qwp(np.deg2rad(45))
+    [[1.0, 0.0, 0.0, 0.0],
+     [0.0, 0.0, 0.0, -1.0],
+     [0.0, 0.0, 1.0, 0.0],
+     [0.0, 1.0, 0.0, 0.0]]
+    """
+    return retarder(np.pi / 2, theta)
+
+
+def hwp(theta: npt.ArrayLike) -> np.ndarray:
+    """Generate Mueller matrix of Half-Wave Plate (HWP)
+
+    Parameters
+    ----------
+    theta : array_like, (...,)
+        Angle of the fast axis
+
+    Returns
+    -------
+    mueller : np.ndarray, (..., 4, 4)
+        Mueller matrix.
+
+    Examples
+    --------
+    >>> pa.hwp(np.deg2rad(0))
+    [[1.0, 0.0, 0.0, 0.0],
+     [0.0, 1.0, 0.0, 0.0],
+     [0.0, 0.0, -1.0, 0.0],
+     [0.0, 0.0, 0.0, -1.0]]
+    >>> pa.hwp(np.deg2rad(45))
+    [[1.0, 0.0, 0.0, 0.0],
+     [0.0, -1.0, 0.0, 0.0],
+     [0.0, 0.0, 1.0, 0.0],
+     [0.0, 0.0, 0.0, -1.0]]
+    """
+    return retarder(np.pi, theta)
+
+
+def depolarizer(
+    d1: npt.ArrayLike = 0.0,
+    d2: npt.ArrayLike | None = None,
+    d3: npt.ArrayLike | None = None,
+) -> np.ndarray:
+    """Generate Mueller matrix of the depolarizer.
+
+    Parameters
+    ----------
+    d1 : float or array_like (...,), optional
+        Depolarization factor in [-1, 1] for s1.
+        If `d2` and `d3` are None, d1=d2=d3.
+    d2 : float or array_like (...,), optional
+        Depolarization factor [-1, 1] for s2.
+    d3 : float or array_like (...,), optional
+        Depolarization factor [-1, 1] for s3.
+
+    Returns
+    -------
+    mueller : np.ndarray, (..., 4, 4)
+        Mueller matrix.
 
     Examples
     --------
@@ -281,23 +425,36 @@ def depolarizer(v: npt.ArrayLike = 0.0) -> np.ndarray:
      [0.  0.5 0.  0. ]
      [0.  0.  0.5 0. ]
      [0.  0.  0.  0.5]]
-    >>> pa.depolarizer([0.9, 0.8, 0.7])
+    >>> pa.depolarizer(0.9, 0.8, 0.7)
     [[1.  0.  0.  0. ]
      [0.  0.9 0.  0. ]
      [0.  0.  0.8 0. ]
      [0.  0.  0.  0.7]]
     """
-    v = np.asarray(v)
+    # Require either 1 arg or 3 args.
+    if (d2 is None) ^ (d3 is None):
+        raise ValueError("Provide both d2 and d3, or neither.")
 
-    if not (np.abs(v) <= 1.0).all():
-        raise ValueError(f"Invalid value: {v}. Expected -1 <= v <= 1.")
-
-    if v.shape == ():  # Scalar
-        return np.diag([1, v.item(), v.item(), v.item()])
-    elif v.shape == (3,):  # Vector3
-        return np.diag([1, *v])
+    d1 = np.asarray(d1)
+    if d2 is None:
+        d2 = d3 = d1
     else:
-        raise ValueError(f"Invalid shape: {v.shape}. Expected () or (3,).")
+        d2 = np.asarray(d2)
+        d3 = np.asarray(d3)
+
+    # Validate range.
+    for name, x in (("d1", d1), ("d2", d2), ("d3", d3)):
+        if not (np.abs(x) <= 1.0).all():
+            raise ValueError(f"Invalid value: {name}={x}. Expected -1 <= {name} <= 1.")
+
+    return _broadcast_mueller(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, d1, 0.0, 0.0],
+            [0.0, 0.0, d2, 0.0],
+            [0.0, 0.0, 0.0, d3],
+        ]
+    )
 
 
 def diattenuator(d: npt.ArrayLike, t: float = 1.0) -> np.ndarray:
@@ -346,7 +503,7 @@ def diattenuator(d: npt.ArrayLike, t: float = 1.0) -> np.ndarray:
      [-0.5  0.   0.   0.5]]
     """
     d = np.asarray(d)
-    norm = np.linalg.norm(d)
+    norm = np.linalg.norm(d, axis=-1)
     d_normalized = d / norm
     m_D = np.sqrt(1 - norm**2) * np.eye(3) + (1 - np.sqrt(1 - norm**2)) * np.outer(d_normalized, d_normalized)
     M_D = np.empty((4, 4))
@@ -361,12 +518,15 @@ ISMUELLER_STOKES = "ISMUELLER_STOKES"  # Stokes criterion by brute-force
 ISMUELLER_GK = "ISMUELLER_GK"  # Givens-Kostinski, 1993
 
 
-def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_size: int = 100, atol: float = 1e-4) -> np.ndarray:
+def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_size: int = 100) -> np.ndarray:
     """Check physical realizability of Mueller matrix using Stokes criterion by brute-force.
 
-    This function checks the Stokes criterion by projecting a dense set of Stokes vectors and verifying that the resulting output vectors remain physically valid Stokes vectors.
+    This function checks the Stokes criterion by projecting
+    a dense set of Stokes vectors and verifying that the
+    resulting output vectors remain physically valid Stokes vectors.
 
-    To improve efficiency, this function divide the input Stokes vectors into small chunks and terminate early, avoiding unnecessary computation.
+    To improve efficiency, this function divide the input Stokes vectors
+    into small chunks and terminate early, avoiding unnecessary computation.
 
     Parameters
     ----------
@@ -376,8 +536,6 @@ def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_siz
         Total number of Stokes vectors to test, by default 10000.
     chunk_size : int, optional
         Number of Stokes vectors to test in each chunk, by default 100.
-    atol : float, optional
-        Absolute tolerance for checking Stokes vectors, by default 1e-4.
 
     Returns
     -------
@@ -396,7 +554,7 @@ def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_siz
         s_out = np.einsum("...ij,...kj->...ki", mueller[is_valid], s_in, optimize="optimal")  # (..., chunk_size, 4)
 
         # The output should be valid Stokes vectors
-        isstokes = stokes.isstokes(s_out, atol)  # (..., chunk_size)
+        isstokes = stokes.isstokes(s_out)  # (..., chunk_size)
         is_valid[is_valid] = np.all(isstokes, axis=-1)  # (...)
 
         # Check the exit condition
@@ -409,27 +567,11 @@ def _ismueller_stokes(mueller: npt.ArrayLike, total_size: int = 10000, chunk_siz
 
 
 def _ismueller_gk(mueller: npt.ArrayLike) -> np.ndarray:
-    """Check physical realizability of Mueller matrix using Givens-Kostinski method[1]_.
-
-    Parameters
-    ----------
-    mueller : array_like
-        Mueller matrix of shape (..., 4, 4).
-
-    Returns
-    -------
-    np.ndarray
-        Boolean array of shape (...) indicating whether the Mueller matrix is valid.
-
-    References
-    ----------
-    .. [1] Givens, Clark R., and Alexander B. Kostinski. "A simple necessary and sufficient condition on physically realizable Mueller matrices." Journal of Modern Optics 40.3 (1993): 471-481.
-    """
     # Apply eigenvalue decomposition to (G @ M.T @ G @ M)
     M = np.asarray(mueller)  # (..., 4, 4)
     M_T = np.moveaxis(M, -1, -2)  # (..., 4, 4)
     G = np.diag([1.0, -1.0, -1.0, -1.0])  # (4, 4)
-    eigenvalues, eigenvectors = np.linalg.eigh(G @ M_T @ G @ M)  # (..., 4), (..., 4, 4)
+    eigenvalues, eigenvectors = np.linalg.eig(G @ M_T @ G @ M)  # (..., 4), (..., 4, 4)
 
     # All eigenvalues should be real
     is_real = np.all(np.isclose(np.imag(eigenvalues), 0), axis=-1)  # (...,)
@@ -443,26 +585,32 @@ def _ismueller_gk(mueller: npt.ArrayLike) -> np.ndarray:
     return is_real & is_stokes  # (...,)
 
 
-def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK) -> np.ndarray:
+
+def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK, **kwargs) -> npt.NDArray[np.bool]:
     """Check physical realizability of Mueller matrix.
 
     Parameters
     ----------
-    mueller : array_like
-        Mueller matrix of shape (..., 4, 4).
+    mueller : array_like, (..., 4, 4)
+        Mueller matrix.
     method : str, optional
-        Method to use for checking physical realizability, by default pa.ISMUELLER_GK.
-        - pa.ISMUELLER_GK: Givens-Kostinski 1993
-        - pa.ISMUELLER_STOKES: Stokes criterion by brute-force
+        Method to use for checking physical realizability, by default ``pa.ISMUELLER_GK``.
+
+        - ``pa.ISMUELLER_GK``: Givens-Kostinski 1993 [1]_.
+        - ``pa.ISMUELLER_STOKES``: Stokes criterion by brute-force.
 
     Returns
     -------
-    np.ndarray
-        Boolean array of shape (...) indicating whether the Mueller matrix is valid.
+    is_valid : np.ndarray, (...,)
+        Boolean array indicating whether the Mueller matrix is valid.
+
+    References
+    ----------
+    .. [1] Givens, Clark R., and Alexander B. Kostinski. "A simple necessary and sufficient condition on physically realizable Mueller matrices." Journal of Modern Optics 40.3 (1993): 471-481.
     """
     if method == ISMUELLER_GK:  # Givens-Kostinski, 1993
         return _ismueller_gk(mueller)
     elif method == ISMUELLER_STOKES:  # Stokes criterion by brute-force
-        return _ismueller_stokes(mueller)
+        return _ismueller_stokes(mueller, **kwargs)
     else:
         raise ValueError(f"Unknown method: {method}. Use 'ISMUELLER_STOKES' or 'ISMUELLER_GK'.")
