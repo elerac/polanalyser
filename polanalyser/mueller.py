@@ -122,14 +122,14 @@ def estimate_mueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: 
         raise ValueError(f"The shape of mueller matrices must be (N, 3, 3) or (N, 4, 4) or (N, 3) or (N, 4), not {mm_psg.shape} or {mm_psa.shape}")
 
     # In case of stokes vector (N, 3) or (N, 4), expand the axis for later matrix manipulation
-    if mm_psg.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
-        mm_psg = mm_psg[:, np.newaxis, :]
+    if mm_psg.ndim == 2:  # (N, 3) or (N, 4) -> (N, 3, 1) or (N, 4, 1)
+        mm_psg = mm_psg[:, :, np.newaxis]
 
-    if mm_psa.ndim == 2:  # (N, 3) or (N, 4) -> (N, 3, 1) or (N, 4, 1)
-        mm_psa = mm_psa[:, :, np.newaxis]
+    if mm_psa.ndim == 2:  # (N, 3) or (N, 4) -> (N, 1, 3) or (N, 1, 4)
+        mm_psa = mm_psa[:, np.newaxis, :]
 
-    m_h = mm_psg.shape[2]
-    m_w = mm_psa.shape[1]
+    m_h = mm_psg.shape[1]
+    m_w = mm_psa.shape[2]
 
     # Construct the observation matrix
     W = np.empty((num, m_h * m_w))
