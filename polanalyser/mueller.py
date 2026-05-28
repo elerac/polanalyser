@@ -192,6 +192,47 @@ def retardance_vector(M_R: npt.ArrayLike) -> np.ndarray:
     return R_vec
 
 
+def retardance_matrix(R_vec: npt.ArrayLike) -> np.ndarray:
+    """Convert retardance vector to retardance Mueller matrix
+
+    The equations are based on the paper by Lu and Chipman (1996).
+
+    Parameters
+    ----------
+    R_vec : array-like (..., 3)
+        Retardance vector.
+
+    Returns
+    -------
+    M_R : ndarray (..., 4, 4)
+        Retardance Mueller matrix.
+    """
+    R_vec = np.asarray(R_vec)
+    R_vec = np.asarray(R_vec, dtype=np.promote_types(np.float32, R_vec.dtype))
+    if R_vec.shape[-1] != 3:
+        raise ValueError(f"Invalid shape: {R_vec.shape}. Expected (..., 3).")
+
+    R = np.linalg.norm(R_vec, axis=-1)
+    R_hat = _normalize(R_vec, norm=R)
+    delta_ij = np.eye(3)
+    levi_civita_ijk = np.array(
+        [
+            [[0, 0, 0], [0, 0, 1], [0, -1, 0]],
+            [[0, 0, -1], [0, 0, 0], [1, 0, 0]],
+            [[0, 1, 0], [-1, 0, 0], [0, 0, 0]],
+        ]
+    )
+    cos_R = np.cos(R)[..., None, None]
+    sin_R = np.sin(R)[..., None, None]
+    m_R = delta_ij * cos_R
+    m_R += (R_hat[..., :, None] * R_hat[..., None, :]) * (1 - cos_R)
+    m_R += np.sum(levi_civita_ijk * R_hat[..., None, None, :], axis=-1) * sin_R  # Eq. (15)
+
+    M_R = np.zeros((*R_vec.shape[:-1], 4, 4))  # Eq. (14)
+    M_R[..., 0, 0] = 1
+    M_R[..., 1:, 1:] = m_R
+    return M_R
+
 
 def lu_chipman_decompose(M: npt.ArrayLike) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Decompose Mueller matrix with Lu-Chipman decomposition method.
@@ -775,7 +816,6 @@ def _ismueller_gk(mueller: npt.ArrayLike) -> np.ndarray:
     is_stokes = stokes.isstokes(stokes_sigma1)  # (...,)
 
     return is_real & is_stokes  # (...,)
-
 
 
 def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK, **kwargs) -> npt.NDArray[np.bool]:
