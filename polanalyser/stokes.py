@@ -200,7 +200,7 @@ def stokes_to_dolp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
     s0 = stokes[..., 0]
     s1 = stokes[..., 1]
     s2 = stokes[..., 2]
-    return np.sqrt(s1**2 + s2**2) / s0
+    return np.hypot(s1, s2) / s0
 
 
 def stokes_to_aolp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
@@ -310,7 +310,7 @@ def stokes_to_eang(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
     s1 = stokes[..., 1]
     s2 = stokes[..., 2]
     s3 = stokes[..., 3]
-    return 0.5 * np.arctan2(s3, np.sqrt(s1**2 + s2**2))
+    return 0.5 * np.arctan2(s3, np.hypot(s1, s2))
 
 
 def stokes_to_docp(stokes: npt.ArrayLike, axis: int = -1) -> np.ndarray:
