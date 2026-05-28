@@ -6,8 +6,3 @@ from .stokes import stokes_to_dop as cvtStokesToDoP
 from .stokes import stokes_to_eang as cvtStokesToEllipticityAngle
 from .stokes import estimate_stokes as calcStokes
 from .mueller import estimate_mueller as calcMueller
-from .vis import colorize as applyColorMap
-from .vis import colorize_aolp as applyColorToAoLP
-from .vis import colorize_cop as applyColorToCoP
-from .vis import colorize_dop as applyColorToDoP
-from .vis import colorize_top as applyColorToToP
