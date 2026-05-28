@@ -1,6 +1,4 @@
 # Compatibility aliases for old style names
-from .pbrdf import load as load_pbsdf
-from .pbrdf import save as save_pbsdf
 from .stokes import stokes_to_aolp as cvtStokesToAoLP
 from .stokes import stokes_to_docp as cvtStokesToDoCP
 from .stokes import stokes_to_dolp as cvtStokesToDoLP
