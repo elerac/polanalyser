@@ -76,7 +76,8 @@ def estimate_mueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: 
     Parameters
     ----------
     intensities : ArrayLike
-        Intensities (N, *), where N is the number of intensities and * is the shape of the image (or tensor).
+        Intensities with shape ``(N, ...)``, where N is the number of
+        measurements and the remaining axes are the image or tensor shape.
     mm_psg : ArrayLike
         Mueller matrix of the Polarization State Generator (PSG) in (N, 3, 3) or (N, 4, 4). Stokes vector is also available in (N, 3) or (N, 4).
     mm_psa : ArrayLike
@@ -90,7 +91,6 @@ def estimate_mueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: 
     Examples
     --------
     >>> mueller_obj = 2 * np.random.rand(4, 4) - 1  # Unknown mueller matrix of target object
-    >>> # mueller_obj = 2 * np.random.rand(128, 256, 4, 4) - 1  # You can expand to array (like image)
     >>> intensity_list = []
     >>> mm_psg_list = []
     >>> mm_psa_list = []
@@ -101,7 +101,7 @@ def estimate_mueller(intensities: npt.ArrayLike, mm_psg: npt.ArrayLike, mm_psa: 
     ...     intensity_list.append(intensity)
     ...     mm_psg_list.append(mueller_psg)
     ...     mm_psa_list.append(mueller_psa)
-    >>> mueller_pred = pa.calcMueller(intensity_list, mm_psg_list, mm_psa_list)
+    >>> mueller_pred = pa.estimate_mueller(intensity_list, mm_psg_list, mm_psa_list)
     >>> mueller_pred.shape
     (4, 4)
     >>> np.allclose(mueller_obj, mueller_pred)

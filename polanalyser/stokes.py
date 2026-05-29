@@ -9,6 +9,19 @@ from . import mueller
 def stokes(s0: npt.ArrayLike, dop: npt.ArrayLike, aolp: npt.ArrayLike, eang: npt.ArrayLike) -> np.ndarray:
     """Generate Stokes vector from [s0, dop, aolp, eang].
 
+    Given intensity :math:`s_0`, degree of polarization :math:`\\rho`,
+    angle of linear polarization :math:`\\psi`, and ellipticity angle
+    :math:`\\chi`, the Stokes vector is
+
+    .. math::
+        \\mathbf{s} =
+        \\begin{bmatrix}
+        s_0 \\\\
+        s_0 \\rho \\cos2\\psi \\cos2\\chi \\\\
+        s_0 \\rho \\sin2\\psi \\cos2\\chi \\\\
+        s_0 \\rho \\sin2\\chi
+        \\end{bmatrix}.
+
     Parameters
     ----------
     s0 : array_like, (...,)
@@ -63,13 +76,30 @@ def stokes(s0: npt.ArrayLike, dop: npt.ArrayLike, aolp: npt.ArrayLike, eang: npt
 
 
 def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.ndarray:
-    """Estimate stokes parameters from measured intensities and mueller matrices
+    """Estimate Stokes vector from measured intensities and mueller matrices.
+
+    For a Stokes vector dimension :math:`K \\in \\{3, 4\\}`, measured intensities
+    :math:`\\mathbf{i} = [I_1, \\ldots, I_N]^\\mathsf{T} \\in \\mathbb{R}^{N}`,
+    unknown Stokes vector :math:`\\mathbf{s} \\in \\mathbb{R}^{K}`, and
+    analyzer matrix :math:`\\mathbf{A} \\in \\mathbb{R}^{N \\times K}`,
+    whose row :math:`\\mathbf{a}_i^\\mathsf{T} \\in \\mathbb{R}^{1 \\times K}`
+    is given by the first row of the corresponding Mueller matrix or the Stokes vector of the analyzer.
+    The measured intensity is modeled as :math:`I_i = \\mathbf{a}_i^\\mathsf{T} \\mathbf{s}`,
+
+    .. math::
+        \\hat{\\mathbf{s}}
+        = \\operatorname*{arg\\,min}_{\\mathbf{s}}
+        \\left\\|\\mathbf{A}\\mathbf{s} - \\mathbf{i}\\right\\|_2^2
+        = \\mathbf{A}^{+} \\mathbf{i},
+
+    where :math:`\\mathbf{A}^{+} \\in \\mathbb{R}^{K \\times N}` denotes the
+    Moore--Penrose pseudo-inverse of :math:`\\mathbf{A}`.
 
     Parameters
     ----------
-    intensity_list : ArrayLike
-        Intensities (N, *)
-    mueller_list : ArrayLike
+    intensities : ArrayLike
+        Intensities with shape ``(N, ...)``.
+    muellers : ArrayLike
         Mueller matrices (N, 3, 3) or (N, 4, 4), or Stokes vectors (N, 3) or (N, 4). If the shape is (N,), this function treats as the angles of linear polarizer.
 
     Returns
@@ -82,14 +112,14 @@ def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.n
     Calculate the unknown stokes parameters from the measured intensity with a rotating polarizer
 
     >>> stokes = np.array([1.0, 0.1, -0.3])  # Unknown stokes parameters (without circular polarization)
-    >>> intensity_list = []
-    >>> mueller_list = []
+    >>> intensities = []
+    >>> muellers = []
     >>> for angle in np.deg2rad([0, 45, 90, 135]):
     ...     mueller = pa.polarizer(angle)[:3, :3]
     ...     intensity = (mueller @ stokes)[0]
-    ...     intensity_list.append(intensity)
-    ...     mueller_list.append(mueller)
-    >>> stokes_pred = pa.calcStokes(intensity_list, mueller_list)
+    ...     intensities.append(intensity)
+    ...     muellers.append(mueller)
+    >>> stokes_pred = pa.estimate_stokes(intensities, muellers)
     >>> stokes_pred
     [1.0, 0.1, -0.3]
     >>> np.allclose(stokes, stokes_pred)
@@ -98,14 +128,14 @@ def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.n
     Calculate the unknown stokes parameters from the measured intensity with QWP and polarizer
 
     >>> stokes = np.array([1.0, 0.1, -0.3, 0.01])  # Unknown stokes parameters
-    >>> intensity_list = []
-    >>> mueller_list = []
+    >>> intensities = []
+    >>> muellers = []
     >>> for angle in np.deg2rad([0.0, 22.5, 45.0, 67.5]):
     ...     mueller = pa.polarizer(0) @ pa.qwp(angle)
     ...     intensity = (mueller @ stokes)[0]
-    ...     intensity_list.append(intensity)
-    ...     mueller_list.append(mueller)
-    >>> stokes_pred = pa.calcStokes(intensity_list, mueller_list)
+    ...     intensities.append(intensity)
+    ...     muellers.append(mueller)
+    >>> stokes_pred = pa.estimate_stokes(intensities, muellers)
     >>> stokes_pred
     [1.0, 0.1, -0.3, 0.01]
     >>> np.allclose(stokes, stokes_pred)
@@ -117,8 +147,8 @@ def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.n
 
     # If the shape of `muellers` is a 1D array (each element is scalar), this function treats `muellers` as the angles of a linear polarizer.
     if muellers.ndim == 1:
-        polarizer_angles = muellers
-        return estimate_linear_stokes(intensities, polarizer_angles)
+        angles = muellers
+        return estimate_linear_stokes(intensities, angles)
 
     # Check the number of elements
     if len(intensities) != len(muellers):
@@ -140,23 +170,31 @@ def estimate_stokes(intensities: npt.ArrayLike, muellers: npt.ArrayLike) -> np.n
     return stokes
 
 
-def estimate_linear_stokes(intensities: npt.ArrayLike, polarizer_angles: npt.ArrayLike) -> np.ndarray:
-    """Estimate linear polarization stokes parameters from measured intensities and linear polarizer angle
+def estimate_linear_stokes(intensities: npt.ArrayLike, angles: npt.ArrayLike) -> np.ndarray:
+    """Estimate linear-only Stokes vector from measured intensities and linear polarizer angles
 
     Parameters
     ----------
     intensities : ArrayLike
-        Intensities (N, *)
+        Intensities with shape ``(N, ...)``.
     angles : ArrayLike
-        Polarizer angles (N,) in radian
+        Linear polarizer angles ``(N,)`` in radian.
 
     Returns
     -------
     stokes : ndarray
-        Calculated stokes parameters
+        Estimated stokes parameters with shape ``(..., 3)``.
     """
-    muellers = [mueller.polarizer(angle)[:3, :3] for angle in polarizer_angles]
-    return estimate_stokes(intensities, muellers)
+    if np.allclose(angles, np.deg2rad([0, 45, 90, 135])):
+        # The closed-form solution for the special case of 4 angles (0, 45, 90, 135)
+        I000, I045, I090, I135 = np.asarray(intensities, dtype=np.float64)
+        s0 = (I000 + I045 + I090 + I135) * 0.5
+        s1 = I000 - I090
+        s2 = I045 - I135
+        return np.stack([s0, s1, s2], axis=-1)
+    else:
+        muellers = [mueller.polarizer(angle)[:3, :3] for angle in angles]
+        return estimate_stokes(intensities, muellers)
 
 
 def _movelastaxis(a: npt.ArrayLike, source: int) -> np.ndarray:

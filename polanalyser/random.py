@@ -50,7 +50,7 @@ def stokes(
 
     Returns
     -------
-    stokes : ndarray, (*size, 4)
+    stokes : ndarray, ``(*size, 4)``
         Stokes vector. Shape is determined by broadcasting the input arguments.
 
     Examples

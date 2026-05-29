@@ -130,7 +130,7 @@ def render_stokes(
     ----------
     img_stokes : ndarray
         Stokes image with shape (H, W, 4), (H, W, 3), (H, W, 3, 4), or
-        (H, W, 3, 3). The (H, W, 3, *) variants represent color Stokes.
+        (H, W, 3, 3). The four-dimensional variants represent color Stokes.
     gamma : float, default 1.0
         Gamma for Stokes intensity normalization.
     halfrange : float, optional
