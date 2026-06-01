@@ -3,8 +3,8 @@
 This module provides functions for reading and writing OpenEXR (EXR) image files
 containing Stokes polarimetric data in two layouts:
 
-- **Color (BGR)**: shape ``(H, W, 3, 4)`` — spatial dims × BGR color channels ×
-  Stokes components ``(S0, S1, S2, S3)``. EXR channels are named ``S*.{R,G,B}``.
+- **Color (BGR)**: shape ``(H, W, 3, 3)`` or ``(H, W, 3, 4)`` — spatial dims ×
+  BGR color channels × Stokes components. EXR channels are named ``S*.{R,G,B}``.
 - **Mono (grayscale)**: shape ``(H, W, 3)`` or ``(H, W, 4)`` — spatial dims ×
   Stokes components. EXR channels are named ``S*.Y``.
 
@@ -29,8 +29,8 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
 
     Auto-detects whether the EXR file stores mono (``S*.Y``) or color
     (``S*.{R,G,B}``) Stokes channels and returns the appropriate array shape.
-    Mono EXRs may contain either linear-only ``S0.Y`` through ``S2.Y``
-    channels or full ``S0.Y`` through ``S3.Y`` channels.
+    EXRs may contain either linear-only ``S0`` through ``S2`` Stokes channels
+    or full ``S0`` through ``S3`` Stokes channels.
 
     Parameters
     ----------
@@ -41,8 +41,8 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
     Returns
     -------
     np.ndarray
-        - Color EXR: shape ``(H, W, 3, 4)`` — BGR color planes along axis 2,
-          Stokes components ``(S0, S1, S2, S3)`` along axis 3.
+        - Color EXR: shape ``(H, W, 3, 3)`` or ``(H, W, 3, 4)`` — BGR color
+          planes along axis 2, Stokes components along axis 3.
         - Mono EXR:  shape ``(H, W, 3)`` or ``(H, W, 4)`` — Stokes components
           along axis 2.
 
@@ -67,7 +67,8 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
         raise RuntimeError(f"Failed to read pixels from {filename}")
 
     # Determine format by scanning which Stokes channel sets are present.
-    expected_color = {f"{s}.{c}" for s in STOKES_ORDER for c in COLOR_ORDER}
+    expected_color_linear = {f"{s}.{c}" for s in STOKES_LINEAR_ORDER for c in COLOR_ORDER}
+    expected_color_full = {f"{s}.{c}" for s in STOKES_ORDER for c in COLOR_ORDER}
     expected_mono_linear = {f"{s}.{MONO_CHANNEL}" for s in STOKES_LINEAR_ORDER}
     expected_mono_full = {f"{s}.{MONO_CHANNEL}" for s in STOKES_ORDER}
 
@@ -86,7 +87,9 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
         elif component == MONO_CHANNEL:
             found_mono.add(f"{stokes_id}.{component}")
 
-    is_color = found_color == expected_color
+    is_color_linear = found_color == expected_color_linear
+    is_color_full = found_color == expected_color_full
+    is_color = is_color_linear or is_color_full
     is_mono_linear = found_mono == expected_mono_linear
     is_mono_full = found_mono == expected_mono_full
     is_mono = is_mono_linear or is_mono_full
@@ -94,15 +97,15 @@ def imread_stokes(filename: str | Path) -> npt.NDArray[np.float32]:
     if is_color and is_mono:
         raise ValueError(f"Ambiguous EXR: contains both S*.Y and S*.{{R,G,B}} channels in {filename}")
     if not is_color and not is_mono:
-        missing = sorted((expected_color | expected_mono_full) - found_color - found_mono)
+        missing = sorted((expected_color_full | expected_mono_full) - found_color - found_mono)
         raise KeyError(f"Missing channels in {filename}: {missing}")
 
-    stokes_lookup = {name: idx for idx, name in enumerate(STOKES_ORDER)}
-
     if is_color:
+        stokes_order = STOKES_ORDER if is_color_full else STOKES_LINEAR_ORDER
+        stokes_lookup = {name: idx for idx, name in enumerate(stokes_order)}
         color_lookup = {name: idx for idx, name in enumerate(COLOR_ORDER)}
         img_bgr_stokes: npt.NDArray[np.float32] = np.zeros(
-            (spec.height, spec.width, len(COLOR_ORDER), len(STOKES_ORDER)),
+            (spec.height, spec.width, len(COLOR_ORDER), len(stokes_order)),
             dtype=np.float32,
         )
         for idx, channel in enumerate(spec.channelnames):
@@ -141,14 +144,16 @@ def imwrite_stokes(filename: str | Path, img_bgr_stokes: npt.NDArray[np.float32]
           Written as a ``Y`` base channel plus ``S0.Y``, ``S1.Y``, ``S2.Y``.
         - Shape ``(H, W, 4)``    — mono/grayscale Stokes array.  Written as
           a ``Y`` base channel plus ``S0.Y``, ``S1.Y``, ``S2.Y``, ``S3.Y``.
+        - Shape ``(H, W, 3, 3)`` — linear-only BGR color Stokes array. Written
+          as ``R``, ``G``, ``B`` base channels plus ``S0..S2.{R,G,B}`` channels.
         - Shape ``(H, W, 3, 4)`` — BGR color Stokes array.  Written as
-          ``R``, ``G``, ``B`` base channels plus ``S*.{R,G,B}`` channels.
+          ``R``, ``G``, ``B`` base channels plus ``S0..S3.{R,G,B}`` channels.
 
     Raises
     ------
     ValueError
         If ``img_bgr_stokes`` does not have shape ``(H, W, 3)``, ``(H, W, 4)``,
-        or ``(H, W, 3, 4)``.
+        ``(H, W, 3, 3)``, or ``(H, W, 3, 4)``.
     RuntimeError
         If the OIIO ``ImageOutput`` cannot be created or opened.
     """
@@ -156,11 +161,15 @@ def imwrite_stokes(filename: str | Path, img_bgr_stokes: npt.NDArray[np.float32]
     if img_bgr_stokes.ndim == 3 and shape[2] in (len(STOKES_LINEAR_ORDER), len(STOKES_ORDER)):
         mode = "mono"
         stokes_order = STOKES_ORDER if shape[2] == len(STOKES_ORDER) else STOKES_LINEAR_ORDER
-    elif img_bgr_stokes.ndim == 4 and shape[2:] == (len(COLOR_ORDER), len(STOKES_ORDER)):
+    elif img_bgr_stokes.ndim == 4 and shape[2] == len(COLOR_ORDER) and shape[3] in (len(STOKES_LINEAR_ORDER), len(STOKES_ORDER)):
         mode = "color"
-        stokes_order = STOKES_ORDER
+        stokes_order = STOKES_ORDER if shape[3] == len(STOKES_ORDER) else STOKES_LINEAR_ORDER
     else:
-        raise ValueError(f"img_bgr_stokes must have shape (H, W, 3) or (H, W, 4) for mono, or (H, W, 3, 4) for color; " f"got {shape!r}")
+        raise ValueError(
+            "img_bgr_stokes must have shape (H, W, 3) or (H, W, 4) for mono, "
+            "or (H, W, 3, 3) or (H, W, 3, 4) for color; "
+            f"got {shape!r}"
+        )
 
     import OpenImageIO as oiio
 
@@ -176,15 +185,15 @@ def imwrite_stokes(filename: str | Path, img_bgr_stokes: npt.NDArray[np.float32]
             channel_names.append(f"{stokes_id}.{MONO_CHANNEL}")
             channel_planes.append(img_bgr_stokes[..., stokes_idx])
     else:
-        stokes_lookup = {name: idx for idx, name in enumerate(STOKES_ORDER)}
+        stokes_lookup = {name: idx for idx, name in enumerate(stokes_order)}
         # Base RGB display channels (from S0)
         s0_idx = stokes_lookup["S0"]
         for color in FILE_COLOR_ORDER:
             color_idx = COLOR_ORDER.index(color)
             channel_names.append(color)
             channel_planes.append(img_bgr_stokes[..., color_idx, s0_idx])
-        # Full Stokes tensor channels
-        for stokes_id in STOKES_ORDER:
+        # Stokes tensor channels
+        for stokes_id in stokes_order:
             stokes_idx = stokes_lookup[stokes_id]
             for color in FILE_COLOR_ORDER:
                 color_idx = COLOR_ORDER.index(color)
