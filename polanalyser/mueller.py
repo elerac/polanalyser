@@ -818,7 +818,7 @@ def _ismueller_gk(mueller: npt.ArrayLike) -> np.ndarray:
     return is_real & is_stokes  # (...,)
 
 
-def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK, **kwargs) -> npt.NDArray[np.bool]:
+def ismueller(mueller: npt.ArrayLike, method: str = ISMUELLER_GK, **kwargs) -> npt.NDArray:
     """Check physical realizability of Mueller matrix.
 
     Parameters
