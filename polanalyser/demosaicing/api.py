@@ -107,4 +107,5 @@ def demosaicing(img_raw: np.ndarray, code: str = COLOR_PolarMono) -> list[np.nda
     if code == COLOR_PolarMono_IGRI2:
         return demosaicing_mono_igri2(img_raw)
 
-    raise ValueError(f"Unsupported 'code': '{code}'. Supported codes are {", ".join(_SUPPORTED_CODES)}")
+    code_list = ", ".join(_SUPPORTED_CODES)
+    raise ValueError(f"Unsupported 'code': '{code}'. Supported codes are {code_list}.")
