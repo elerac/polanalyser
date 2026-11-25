@@ -81,7 +81,7 @@ def applyColorMap(x: np.ndarray, colormap: Union[str, matplotlib.colors.Colormap
     # Get colormap
     if isinstance(colormap, (str, matplotlib.colors.Colormap)):
         # from matplotlib
-        cmap = matplotlib.cm.get_cmap(colormap, 256)
+        cmap = plt.get_cmap(colormap, 256)
         lut = cmap(range(256))  # [0.0, 1.0], (256, 4), np.float64, RGBA
         lut = lut[:, :3]  # [0.0, 1.0], (256, 3), np.float64, RGB
         lut = lut[:, ::-1]  # [0.0, 1.0], (256, 3), np.float64, BGR

@@ -8,8 +8,8 @@ Polanalyser is polarization image analysis tool.
 
 ## Key Features
 
-- [**Demosaicing for polarimetric image sensor**](#polarization-demosaicing)
-  - Both Monochrome/Color Polarization image sensors (*e.g.*, IMX250MZR / MYR) are supported.
+- [**RAW-to-Stokes Reconstruction**](#raw-to-stokes-reconstruction)
+  - Both Monochrome/Color Polarization image sensors (*e.g.*, IMX250MZR / MYR) are supported, with joint demosaicing and denoising available for the IMX250MYR.
 - [**Analysis of Stokes vector**](#analysis-of-stokes-vector)
   - Obtain Stokes vector from images captured with a polarization camera or custom setup.
   - Convert Stokes vector to meaningful parameters, such as DoLP, AoLP.
@@ -27,25 +27,50 @@ Polanalyser is polarization image analysis tool.
 - Numpy
 - OpenCV
 - matplotlib
-- SymPy (optional)
+- SymPy (optional, install with `pip install "polanalyser[sympy]"`)
 
 ```sh
 pip install polanalyser
 ```
 
-## Polarization Image Dataset
+To use `pa.raw2stokes()`, choose the inference extra for your device. The model downloads on first use.
 
-Dataset of images captured by a polarization camera (FLIR, BFS-U3-51S5P-C) is available. You can use these images to learn how to analyze polarization images.
+```sh
+pip install "polanalyser[inference]"       # CPU or Apple Silicon
+# OR
+pip install "polanalyser[inference-cuda]"  # NVIDIA CUDA
+```
 
-[**[Click here to download the dataset (Google Drive)]**](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+## Polarization Image Datasets
 
-[![](documents/dataset_overview.png)](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
+We provide images captured with Sony monochrome and color polarization sensors. You can use these datasets to explore polarization images and try the examples below.
+
+- **Monochrome polarization (Sony IMX250MZR)** — [Download from Google Drive](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing).
+- **Color polarization (Sony IMX250MYR)** — [Download from Hugging Face](https://huggingface.co/elerac/raw2stokes/tree/main/examples/imx250myr).
+
+[![Monochrome polarization images captured with the Sony IMX250MZR](documents/dataset_overview.png)](https://drive.google.com/drive/folders/1vCe9N05to5_McvwyDqxTmLIKz7vRzmbX?usp=sharing)
 
 ## Usage
 
-### Polarization demosaicing
+### RAW-to-Stokes Reconstruction
 
-Demosaic raw polarization image captured with a polarization sensor (*e.g.*, [IMX250MZR / MYR](https://www.sony-semicon.com/en/products/is/industry/polarization.html)).
+#### Joint Demosaicing and Denoising
+
+Reconstruct color Stokes vectors directly from a single RAW polarization image with `pa.raw2stokes()`. The model jointly demosaics and denoises the color polarization filter array (CPFA) mosaic of the Sony IMX250MYR.
+
+```python
+import cv2
+import numpy as np
+import polanalyser as pa
+
+raw = cv2.imread("raw.tiff", cv2.IMREAD_UNCHANGED)
+raw = raw.astype(np.float32) / 4095.0  # Normalize right-aligned 12-bit RAW
+stokes = pa.raw2stokes(raw)
+```
+
+#### Classical Polarization Demosaicing
+
+Use `pa.demosaicing()` to recover images at four polarizer angles from a monochrome or color polarization mosaic (e.g., Sony IMX250MZR or IMX250MYR).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="documents/demosaicing_dark.png">
