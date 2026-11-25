@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "polanalyser"
-version = "3.1.0"
+version = "3.1.1"
 description = "Polarization image analysis tool"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,7 +24,7 @@ Homepage = "https://github.com/elerac/polanalyser"
 
 [project.optional-dependencies]
 inference = ["huggingface-hub>=0.25", "onnxruntime>=1.23,<2"]
-inference-cuda = ["huggingface-hub>=0.25", "onnxruntime-gpu>=1.23,<2"]
+inference-cuda = ["huggingface-hub>=0.25", "onnxruntime-gpu[cuda,cudnn]>=1.23,<2"]
 sympy = ["sympy"]
 
 [tool.setuptools.packages.find]
